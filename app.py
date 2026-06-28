@@ -41,6 +41,7 @@ pages = [
     st.Page("home.py",    title="Home",     icon="🏠", default=True),
     st.Page("pool.py",    title="The Pool", icon="🏆"),
     st.Page("bracket.py", title="Bracket",  icon="🗓️"),
+    st.Page("rules.py",   title="Rules",    icon="📋"),
 ]
 if user.get("email", "").lower() == ADMIN_EMAIL.lower():
     pages.append(st.Page("admin.py", title="Admin", icon="⚙️"))
