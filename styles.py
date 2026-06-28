@@ -78,25 +78,25 @@ def inject_css():
         background-color: #1d4ed8 !important;
     }
 
-    /* Input fields — border + dark bg on the OUTER wrapper so the eye button can't escape */
-    [data-testid="stTextInput"] > div > div,
-    [data-testid="stTextInput"] > div > div > div {
+    /* BaseWeb input container — this is what Streamlit actually renders */
+    [data-baseweb="input"] {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
         border-radius: 8px !important;
         overflow: hidden !important;
     }
-    /* The actual <input> has no border of its own */
-    [data-testid="stTextInput"] input {
+    /* Every child div inside the container (incl. the hidden button's wrapper) */
+    [data-baseweb="input"] > div {
+        background-color: #1e293b !important;
+    }
+    [data-baseweb="input"] input {
         background-color: #1e293b !important;
         color: #f1f5f9 !important;
         caret-color: #f1f5f9 !important;
-        border: none !important;
-        border-radius: 0 !important;
     }
-    [data-testid="stTextInput"] input::placeholder { color: #475569 !important; opacity: 1 !important; }
+    [data-baseweb="input"] input::placeholder { color: #475569 !important; opacity: 1 !important; }
 
-    /* Hide the password reveal toggle — removes the whitespace glitch */
+    /* Hide the password reveal toggle */
     [data-testid="stTextInput"] button { display: none !important; }
 
     /* Selectbox / date inputs */
