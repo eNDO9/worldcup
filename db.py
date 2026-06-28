@@ -4,24 +4,27 @@ from supabase_client import get_client
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-def create_user(username: str, password: str) -> dict | None:
+def create_user(email: str, password: str) -> dict | None:
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     try:
         res = get_client().table("app_users").insert(
-            {"username": username, "password_hash": hashed}
+            {"email": email.lower().strip(), "password_hash": hashed}
         ).execute()
         return res.data[0] if res.data else None
     except Exception:
         return None
 
-def login_user(username: str, password: str) -> dict | None:
-    res = get_client().table("app_users").select("*").eq("username", username).execute()
+def login_user(email: str, password: str) -> dict | None:
+    res = get_client().table("app_users").select("*").eq("email", email.lower().strip()).execute()
     if not res.data:
         return None
     user = res.data[0]
     if bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
         return user
     return None
+
+def display_name(user: dict) -> str:
+    return user.get("email", "").split("@")[0]
 
 def get_user_by_id(user_id: str) -> dict | None:
     res = get_client().table("app_users").select("*").eq("id", user_id).execute()
@@ -121,8 +124,8 @@ def get_all_picks_for_round(round_id: int) -> list:
 
 def get_standings() -> list:
     users = get_client().table("app_users").select(
-        "id, username, is_eliminated, eliminated_round_id, created_at"
-    ).order("username").execute().data or []
+        "id, email, is_eliminated, eliminated_round_id, created_at"
+    ).order("email").execute().data or []
 
     picks_all = get_client().table("picks").select("*").execute().data or []
     rounds = {r["id"]: r for r in get_all_rounds()}

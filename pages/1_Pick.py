@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime, timezone
 from styles import inject_css, flag
 import db
+from db import display_name
 
 st.set_page_config(page_title="Pick", page_icon="🎯", layout="wide")
 inject_css()
@@ -15,7 +16,7 @@ user = db.get_user_by_id(st.session_state.user["id"]) or st.session_state.user
 st.session_state.user = user
 
 with st.sidebar:
-    st.markdown(f"### {user['username']}")
+    st.markdown(f"### {display_name(user)}")
     badge = '<span class="badge badge-red">Eliminated</span>' if user["is_eliminated"] else '<span class="badge badge-green">Still alive ✓</span>'
     st.markdown(badge, unsafe_allow_html=True)
     st.markdown("---")

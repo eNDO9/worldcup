@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime, timezone
 from styles import inject_css, hide_sidebar, flag
 import db
+from db import display_name
 
 st.set_page_config(
     page_title="World Cup Survivor",
@@ -17,7 +18,7 @@ if "user" not in st.session_state:
 
 def sidebar_user(user):
     with st.sidebar:
-        st.markdown(f"### {user['username']}")
+        st.markdown(f"### {display_name(user)}")
         if user["is_eliminated"]:
             st.markdown('<span class="badge badge-red">Eliminated</span>', unsafe_allow_html=True)
         else:
@@ -121,7 +122,7 @@ else:
 
         if st.session_state.auth_mode == "login":
             with st.form("login"):
-                st.text_input("Username", key="li_user", placeholder="Your username")
+                st.text_input("Email", key="li_user", placeholder="you@example.com")
                 st.text_input("Password", type="password", key="li_pass", placeholder="Your password")
                 if st.form_submit_button("Log In", use_container_width=True):
                     u, p = st.session_state.li_user, st.session_state.li_pass
@@ -131,7 +132,7 @@ else:
                             st.session_state.user = user
                             st.rerun()
                         else:
-                            st.error("Invalid username or password.")
+                            st.error("Invalid email or password.")
                     else:
                         st.warning("Please fill in both fields.")
 
@@ -146,7 +147,7 @@ else:
 
         else:
             with st.form("signup"):
-                st.text_input("Username", key="su_user", placeholder="Choose a username")
+                st.text_input("Email", key="su_user", placeholder="you@example.com")
                 st.text_input("Password", type="password", key="su_pass", placeholder="At least 6 characters")
                 st.text_input("Confirm password", type="password", key="su_conf", placeholder="Repeat password")
                 if st.form_submit_button("Create Account", use_container_width=True):
@@ -155,6 +156,8 @@ else:
                     c = st.session_state.su_conf
                     if not (u and p and c):
                         st.warning("Please fill in all fields.")
+                    elif "@" not in u:
+                        st.error("Please enter a valid email address.")
                     elif p != c:
                         st.error("Passwords don't match.")
                     elif len(p) < 6:
@@ -165,7 +168,7 @@ else:
                             st.session_state.user = user
                             st.rerun()
                         else:
-                            st.error("Username already taken — try another.")
+                            st.error("An account with that email already exists.")
 
             st.markdown(
                 '<p style="text-align:center;margin-top:1rem;color:#64748b;font-size:0.9rem;">'

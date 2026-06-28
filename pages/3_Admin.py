@@ -1,6 +1,7 @@
 import streamlit as st
 from styles import inject_css, flag
 import db
+from db import display_name
 
 st.set_page_config(page_title="Admin", page_icon="⚙️", layout="wide")
 inject_css()
@@ -13,7 +14,7 @@ if not st.session_state.get("user"):
 user = st.session_state.user
 
 with st.sidebar:
-    st.markdown(f"### {user['username']}")
+    st.markdown(f"### {display_name(user)}")
     st.markdown("---")
     if st.button("Log out", use_container_width=True):
         st.session_state.user = None

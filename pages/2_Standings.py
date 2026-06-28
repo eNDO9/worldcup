@@ -1,6 +1,7 @@
 import streamlit as st
 from styles import inject_css, flag
 import db
+from db import display_name
 
 st.set_page_config(page_title="Standings", page_icon="📊", layout="wide")
 inject_css()
@@ -13,7 +14,7 @@ if not st.session_state.get("user"):
 user = st.session_state.user
 
 with st.sidebar:
-    st.markdown(f"### {user['username']}")
+    st.markdown(f"### {display_name(user)}")
     badge = '<span class="badge badge-red">Eliminated</span>' if user["is_eliminated"] else '<span class="badge badge-green">Still alive ✓</span>'
     st.markdown(badge, unsafe_allow_html=True)
     st.markdown("---")
@@ -41,7 +42,7 @@ def render_player(u, rounds):
     border = "gold" if is_me else ("red" if u["is_eliminated"] else "")
     badge = ('<span class="badge badge-red">Eliminated</span>' if u["is_eliminated"]
              else '<span class="badge badge-green">Alive</span>')
-    name_html = f'<b>{u["username"]}</b>{"&nbsp; 👈 you" if is_me else ""}'
+    name_html = f'<b>{display_name(u)}</b>{"&nbsp; 👈 you" if is_me else ""}'
 
     picks_html = ""
     for p in u["picks"]:
