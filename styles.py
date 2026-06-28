@@ -78,27 +78,42 @@ def inject_css():
         background-color: #1d4ed8 !important;
     }
 
-    /* Input fields */
-    .stTextInput > div > div > input,
-    .stTextInput input,
+    /* Input fields — border + dark bg on the OUTER wrapper so the eye button can't escape */
+    [data-testid="stTextInput"] > div > div,
+    [data-testid="stTextInput"] > div > div > div {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+    }
+    /* The actual <input> has no border of its own */
+    [data-testid="stTextInput"] input {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+        caret-color: #f1f5f9 !important;
+        border: none !important;
+        border-radius: 0 !important;
+    }
+    [data-testid="stTextInput"] input::placeholder { color: #475569 !important; opacity: 1 !important; }
+
+    /* Password reveal button — match the dark container */
+    [data-testid="stTextInput"] button {
+        background-color: #1e293b !important;
+        border: none !important;
+        border-left: 1px solid #334155 !important;
+        padding: 0 10px !important;
+    }
+    [data-testid="stTextInput"] button:hover { background-color: #2d3f55 !important; }
+    [data-testid="stTextInput"] button svg * { stroke: #64748b !important; fill: none !important; }
+
+    /* Selectbox / date inputs */
     .stSelectbox > div > div,
     .stDateInput > div > div > input {
         background-color: #1e293b !important;
         color: #f1f5f9 !important;
-        caret-color: #f1f5f9 !important;
         border: 1px solid #334155 !important;
         border-radius: 8px !important;
     }
-    .stTextInput input::placeholder { color: #475569 !important; opacity: 1 !important; }
-
-    /* Password reveal eye button */
-    .stTextInput button {
-        background-color: #1e293b !important;
-        border-left: 1px solid #334155 !important;
-        color: #64748b !important;
-    }
-    .stTextInput button:hover { background-color: #2d3f55 !important; }
-    .stTextInput button svg path { stroke: #94a3b8 !important; }
 
     [data-testid="stMetricValue"] { color: #f59e0b !important; font-size: 1.6rem !important; }
     [data-testid="stMetricLabel"] { color: #94a3b8 !important; }
