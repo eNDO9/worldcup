@@ -60,10 +60,10 @@ def inject_css():
     }
     .stButton > button:disabled { opacity: 0.3; }
 
-    /* Form submit buttons — gold, always visible */
+    /* Form submit buttons — blue */
     .stFormSubmitButton > button,
     [data-testid="stFormSubmitButton"] > button {
-        background-color: #d97706 !important;
+        background-color: #2563eb !important;
         border: none !important;
         border-radius: 10px !important;
         color: #ffffff !important;
@@ -75,17 +75,30 @@ def inject_css():
     }
     .stFormSubmitButton > button:hover,
     [data-testid="stFormSubmitButton"] > button:hover {
-        background-color: #b45309 !important;
+        background-color: #1d4ed8 !important;
     }
 
+    /* Input fields */
     .stTextInput > div > div > input,
+    .stTextInput input,
     .stSelectbox > div > div,
     .stDateInput > div > div > input {
         background-color: #1e293b !important;
         color: #f1f5f9 !important;
+        caret-color: #f1f5f9 !important;
         border: 1px solid #334155 !important;
         border-radius: 8px !important;
     }
+    .stTextInput input::placeholder { color: #475569 !important; opacity: 1 !important; }
+
+    /* Password reveal eye button */
+    .stTextInput button {
+        background-color: #1e293b !important;
+        border-left: 1px solid #334155 !important;
+        color: #64748b !important;
+    }
+    .stTextInput button:hover { background-color: #2d3f55 !important; }
+    .stTextInput button svg path { stroke: #94a3b8 !important; }
 
     [data-testid="stMetricValue"] { color: #f59e0b !important; font-size: 1.6rem !important; }
     [data-testid="stMetricLabel"] { color: #94a3b8 !important; }
