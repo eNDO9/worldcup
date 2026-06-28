@@ -108,9 +108,10 @@ def get_used_teams(user_id: str) -> set:
 
 def submit_pick(user_id: str, round_id: int, team: str) -> bool:
     try:
-        get_client().table("picks").upsert({
-            "user_id": user_id, "round_id": round_id, "team_picked": team
-        }).execute()
+        get_client().table("picks").upsert(
+            {"user_id": user_id, "round_id": round_id, "team_picked": team},
+            on_conflict="user_id,round_id",
+        ).execute()
         return True
     except Exception:
         return False
