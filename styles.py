@@ -96,15 +96,8 @@ def inject_css():
     }
     [data-testid="stTextInput"] input::placeholder { color: #475569 !important; opacity: 1 !important; }
 
-    /* Password reveal button — match the dark container */
-    [data-testid="stTextInput"] button {
-        background-color: #1e293b !important;
-        border: none !important;
-        border-left: 1px solid #334155 !important;
-        padding: 0 10px !important;
-    }
-    [data-testid="stTextInput"] button:hover { background-color: #2d3f55 !important; }
-    [data-testid="stTextInput"] button svg * { stroke: #64748b !important; fill: none !important; }
+    /* Hide the password reveal toggle — removes the whitespace glitch */
+    [data-testid="stTextInput"] button { display: none !important; }
 
     /* Selectbox / date inputs */
     .stSelectbox > div > div,
