@@ -27,13 +27,17 @@ def inject_css():
     [data-testid="stDecoration"],
     [data-testid="stStatusWidget"] { display: none !important; }
 
-    /* Sidebar (shown only when logged in) */
+    /* Sidebar — always visible, never collapsible */
     section[data-testid="stSidebar"] {
         background-color: #1e293b;
         border-right: 1px solid #2d3f55;
+        transform: translateX(0) !important;
+        display: flex !important;
+        visibility: visible !important;
     }
     section[data-testid="stSidebar"] * { color: #f1f5f9 !important; }
     [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    [data-testid="collapsedControl"] { display: none !important; }
 
     h1, h2, h3, h4 { color: #f1f5f9 !important; }
     p, label, span, div { color: #cbd5e1; }

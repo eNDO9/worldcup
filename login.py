@@ -76,20 +76,29 @@ def render():
     <script>
     (function() {
       function patch() {
-        var doc = window.parent.document;
-        var email = doc.querySelector('input[aria-label="Email"]');
-        if (email) { email.setAttribute('autocomplete','email'); email.setAttribute('name','email'); }
-        var hasConfirm = doc.querySelector('input[aria-label="Confirm password"]');
-        var pw = doc.querySelector('input[aria-label="Password"]');
-        if (pw) {
-          pw.setAttribute('autocomplete', hasConfirm ? 'new-password' : 'current-password');
-          pw.setAttribute('name','password');
-        }
-        var conf = doc.querySelector('input[aria-label="Confirm password"]');
-        if (conf) { conf.setAttribute('autocomplete','new-password'); conf.setAttribute('name','confirm-password'); }
+        try {
+          var doc = window.parent.document;
+          var email = doc.querySelector('input[aria-label="Email"]');
+          if (email) { email.autocomplete = 'email'; email.name = 'email'; }
+          var hasConfirm = !!doc.querySelector('input[aria-label="Confirm password"]');
+          var pw = doc.querySelector('input[aria-label="Password"]');
+          if (pw) { pw.autocomplete = hasConfirm ? 'new-password' : 'current-password'; pw.name = 'password'; }
+          var conf = doc.querySelector('input[aria-label="Confirm password"]');
+          if (conf) { conf.autocomplete = 'new-password'; conf.name = 'confirm-password'; }
+          return !!(email || pw);
+        } catch(e) { return false; }
       }
-      patch();
-      setTimeout(patch, 300);
+      if (!patch()) {
+        try {
+          var obs = new MutationObserver(function() { if (patch()) { obs.disconnect(); } });
+          obs.observe(window.parent.document.body, { childList: true, subtree: true });
+          setTimeout(function() { obs.disconnect(); }, 8000);
+        } catch(e) {
+          setTimeout(patch, 500);
+          setTimeout(patch, 1500);
+          setTimeout(patch, 3000);
+        }
+      }
     })();
     </script>
     """, height=0)
