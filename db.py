@@ -142,7 +142,7 @@ def get_standings() -> list:
             "rounds": rounds,
         })
 
-    result.sort(key=lambda u: (u["is_eliminated"], u["username"]))
+    result.sort(key=lambda u: (u["is_eliminated"], u.get("email", "")))
     return result
 
 

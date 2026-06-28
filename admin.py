@@ -1,49 +1,15 @@
 import streamlit as st
-from styles import inject_css, flag
+from styles import flag
 import db
-from db import display_name
-
-st.set_page_config(page_title="Admin", page_icon="⚙️", layout="wide")
-inject_css()
-
-if not st.session_state.get("user"):
-    st.warning("Please log in first.")
-    st.page_link("app.py", label="← Go to Login")
-    st.stop()
 
 user = st.session_state.user
 
-with st.sidebar:
-    st.markdown(f"### {display_name(user)}")
-    st.markdown("---")
-    if st.button("Log out", use_container_width=True):
-        st.session_state.user = None
-        st.rerun()
-
 st.markdown("# ⚙️ Admin Panel")
-
-# Password gate
-if "admin_authed" not in st.session_state:
-    st.session_state.admin_authed = False
-
-if not st.session_state.admin_authed:
-    with st.form("admin_login"):
-        pw = st.text_input("Admin password", type="password")
-        if st.form_submit_button("Enter"):
-            if pw == st.secrets.get("admin", {}).get("password", ""):
-                st.session_state.admin_authed = True
-                st.rerun()
-            else:
-                st.error("Wrong password.")
-    st.stop()
-
-st.success("Admin access granted.")
-st.markdown("---")
 
 rounds = db.get_all_rounds()
 round_map = {r["id"]: r for r in rounds}
 
-# ── Section 1: Round status ────────────────────────────────────────────────────
+# ── Round status ──────────────────────────────────────────────────────────────
 st.markdown("### Round Status")
 for r in rounds:
     col1, col2 = st.columns([3, 2])
@@ -61,19 +27,18 @@ for r in rounds:
 
 st.markdown("---")
 
-# ── Section 2: Enter match results ────────────────────────────────────────────
+# ── Match results ─────────────────────────────────────────────────────────────
 st.markdown("### Enter Match Results")
 selected_round_id = st.selectbox(
     "Select round",
     options=[r["id"] for r in rounds],
     format_func=lambda rid: round_map[rid]["name"],
 )
-
 matches = db.get_matches_for_round(selected_round_id)
+
 if not matches:
-    st.info("No matches found for this round. Add them below.")
+    st.info("No matches for this round yet. Add them below.")
 else:
-    changed = False
     for m in matches:
         c1, c2, c3 = st.columns([4, 4, 3])
         with c1:
@@ -88,28 +53,27 @@ else:
             if winner != current and winner != "— pending —":
                 if st.button("Save", key=f"save_{m['id']}"):
                     db.mark_match_winner(m["id"], winner)
-                    st.success(f"Winner saved: {winner}")
-                    changed = True
+                    st.success(f"Saved: {winner}")
                     st.rerun()
 
     st.markdown("---")
-    all_results_in = all(m["winner"] for m in matches)
-    if all_results_in:
-        st.warning("All results entered. Finalizing will eliminate users whose picks lost and activate the next round.")
+    all_done = all(m["winner"] for m in matches)
+    if all_done:
+        st.warning("All results entered. Finalizing eliminates players whose pick lost and activates the next round.")
         if st.button("🏁 Finalize Round & Advance", type="primary"):
             result = db.finalize_round(selected_round_id)
             if result["eliminated"]:
                 st.error(f"Eliminated: {', '.join(result['eliminated'])}")
             else:
-                st.success("Round finalized — no one was eliminated!")
+                st.success("Round finalized — no one eliminated!")
             st.rerun()
     else:
         pending = sum(1 for m in matches if not m["winner"])
-        st.info(f"{pending} match result(s) still pending.")
+        st.info(f"{pending} result(s) still pending.")
 
 st.markdown("---")
 
-# ── Section 3: Add match (for future rounds) ──────────────────────────────────
+# ── Add match ─────────────────────────────────────────────────────────────────
 st.markdown("### Add Match")
 with st.form("add_match"):
     col1, col2 = st.columns(2)
@@ -121,7 +85,6 @@ with st.form("add_match"):
     with col2:
         match_date = st.date_input("Date")
         venue = st.text_input("Venue")
-
     if st.form_submit_button("Add Match"):
         if team1 and team2:
             if db.add_match(a_round, team1, team2, str(match_date), venue):
