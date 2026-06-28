@@ -73,7 +73,7 @@ if st.session_state.user:
             elif result == "lost":
                 st.error(f"❌ {flag(pick['team_picked'])} **{pick['team_picked']}** lost — you've been eliminated.")
             else:
-                st.info(f"⏳ Awaiting result for {flag(pick['team_picked'])} **{pick['team_picked'])}**")
+                st.info(f"⏳ Awaiting result for {flag(pick['team_picked'])} **{pick['team_picked']}**")
     else:
         st.info("No active round right now. Check back soon!")
 
