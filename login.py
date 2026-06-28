@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import db
 
 
@@ -70,3 +71,25 @@ def render():
             if st.button("← Back to Log In", use_container_width=True, key="go_login"):
                 st.session_state.auth_mode = "login"
                 st.rerun()
+
+    components.html("""
+    <script>
+    (function() {
+      function patch() {
+        var doc = window.parent.document;
+        var email = doc.querySelector('input[aria-label="Email"]');
+        if (email) { email.setAttribute('autocomplete','email'); email.setAttribute('name','email'); }
+        var hasConfirm = doc.querySelector('input[aria-label="Confirm password"]');
+        var pw = doc.querySelector('input[aria-label="Password"]');
+        if (pw) {
+          pw.setAttribute('autocomplete', hasConfirm ? 'new-password' : 'current-password');
+          pw.setAttribute('name','password');
+        }
+        var conf = doc.querySelector('input[aria-label="Confirm password"]');
+        if (conf) { conf.setAttribute('autocomplete','new-password'); conf.setAttribute('name','confirm-password'); }
+      }
+      patch();
+      setTimeout(patch, 300);
+    })();
+    </script>
+    """, height=0)
