@@ -117,22 +117,35 @@ if active_round:
                     unsafe_allow_html=True,
                 )
             for match in grp:
+                kt = match.get("kickoff_time")
+                kicked_off = False
+                if kt:
+                    kt_dt = datetime.fromisoformat(kt.replace("Z", "+00:00")) if isinstance(kt, str) else kt.replace(tzinfo=timezone.utc)
+                    kicked_off = kt_dt <= now
+
                 c1, mid, c2 = st.columns([5, 1, 5])
                 for team, col in [(match["team1"], c1), (match["team2"], c2)]:
                     used = team in prior_used
                     selected = st.session_state.selected_team == team
                     with col:
                         if st.button(f"{flag(team)} {team}", key=f"pick_{match['id']}_{team}",
-                                     disabled=used, use_container_width=True,
+                                     disabled=used or kicked_off, use_container_width=True,
                                      type="primary" if selected else "secondary"):
                             st.session_state.selected_team = team
                             st.rerun()
                 with mid:
-                    st.markdown(
-                        "<div style='text-align:center;padding-top:10px;'>"
-                        "<b style='color:#64748b;'>vs</b></div>",
-                        unsafe_allow_html=True,
-                    )
+                    if kicked_off:
+                        st.markdown(
+                            "<div style='text-align:center;padding-top:6px;'>"
+                            "<span style='font-size:0.75rem;color:#64748b;'>🔒<br>started</span></div>",
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(
+                            "<div style='text-align:center;padding-top:10px;'>"
+                            "<b style='color:#64748b;'>vs</b></div>",
+                            unsafe_allow_html=True,
+                        )
 
         sel = st.session_state.get("selected_team")
         if sel:
