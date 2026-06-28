@@ -1,13 +1,13 @@
 import streamlit as st
 from datetime import datetime, timezone
-from styles import inject_css, flag
+from styles import inject_css, hide_sidebar, flag
 import db
 
 st.set_page_config(
     page_title="World Cup Survivor",
     page_icon="⚽",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 inject_css()
 
@@ -100,21 +100,33 @@ if st.session_state.user:
 
 # ── Logged out ────────────────────────────────────────────────────────────────
 else:
-    col_l, col_m, col_r = st.columns([1, 2, 1])
+    hide_sidebar()
+
+    if "auth_mode" not in st.session_state:
+        st.session_state.auth_mode = "login"
+
+    _, col_m, _ = st.columns([1, 1.4, 1])
     with col_m:
-        st.markdown("# ⚽ World Cup Survivor")
-        st.markdown("#### Pick one team per round. Never reuse a team. Last one standing wins.")
-        st.markdown("---")
+        st.markdown("""
+        <div style="text-align:center;padding:3rem 0 2rem;">
+            <div style="font-size:3.5rem;line-height:1;">⚽</div>
+            <h1 style="margin:0.6rem 0 0.3rem;font-size:2.2rem;font-weight:700;color:#f1f5f9;">
+                World Cup Survivor
+            </h1>
+            <p style="color:#64748b;font-size:1rem;margin:0;">
+                Pick one team per round &nbsp;·&nbsp; Never reuse &nbsp;·&nbsp; Last one standing wins
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        tab1, tab2 = st.tabs(["Log In", "Sign Up"])
-
-        with tab1:
+        if st.session_state.auth_mode == "login":
             with st.form("login"):
-                username = st.text_input("Username")
-                password = st.text_input("Password", type="password")
+                st.text_input("Username", key="li_user", placeholder="Your username")
+                st.text_input("Password", type="password", key="li_pass", placeholder="Your password")
                 if st.form_submit_button("Log In", use_container_width=True):
-                    if username and password:
-                        user = db.login_user(username, password)
+                    u, p = st.session_state.li_user, st.session_state.li_pass
+                    if u and p:
+                        user = db.login_user(u, p)
                         if user:
                             st.session_state.user = user
                             st.rerun()
@@ -123,22 +135,43 @@ else:
                     else:
                         st.warning("Please fill in both fields.")
 
-        with tab2:
+            st.markdown(
+                '<p style="text-align:center;margin-top:1rem;color:#64748b;font-size:0.9rem;">'
+                "Don't have an account?</p>",
+                unsafe_allow_html=True,
+            )
+            if st.button("Create an account →", use_container_width=True, key="go_signup"):
+                st.session_state.auth_mode = "signup"
+                st.rerun()
+
+        else:
             with st.form("signup"):
-                new_user = st.text_input("Choose a username")
-                new_pass = st.text_input("Choose a password", type="password")
-                confirm  = st.text_input("Confirm password", type="password")
+                st.text_input("Username", key="su_user", placeholder="Choose a username")
+                st.text_input("Password", type="password", key="su_pass", placeholder="At least 6 characters")
+                st.text_input("Confirm password", type="password", key="su_conf", placeholder="Repeat password")
                 if st.form_submit_button("Create Account", use_container_width=True):
-                    if not (new_user and new_pass and confirm):
+                    u = st.session_state.su_user
+                    p = st.session_state.su_pass
+                    c = st.session_state.su_conf
+                    if not (u and p and c):
                         st.warning("Please fill in all fields.")
-                    elif new_pass != confirm:
+                    elif p != c:
                         st.error("Passwords don't match.")
-                    elif len(new_pass) < 6:
+                    elif len(p) < 6:
                         st.error("Password must be at least 6 characters.")
                     else:
-                        user = db.create_user(new_user, new_pass)
+                        user = db.create_user(u, p)
                         if user:
                             st.session_state.user = user
                             st.rerun()
                         else:
                             st.error("Username already taken — try another.")
+
+            st.markdown(
+                '<p style="text-align:center;margin-top:1rem;color:#64748b;font-size:0.9rem;">'
+                "Already have an account?</p>",
+                unsafe_allow_html=True,
+            )
+            if st.button("← Back to Log In", use_container_width=True, key="go_login"):
+                st.session_state.auth_mode = "login"
+                st.rerun()

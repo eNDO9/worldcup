@@ -19,8 +19,15 @@ def inject_css():
     st.markdown("""
     <style>
     .stApp { background-color: #0f172a; }
-    #MainMenu, footer { visibility: hidden; }
 
+    /* Hide all Streamlit chrome */
+    #MainMenu, footer { visibility: hidden; }
+    header[data-testid="stHeader"],
+    .stAppHeader,
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"] { display: none !important; }
+
+    /* Sidebar (shown only when logged in) */
     section[data-testid="stSidebar"] {
         background-color: #1e293b;
         border-right: 1px solid #2d3f55;
@@ -30,6 +37,7 @@ def inject_css():
     h1, h2, h3, h4 { color: #f1f5f9 !important; }
     p, label, span, div { color: #cbd5e1; }
 
+    /* Regular buttons */
     .stButton > button {
         background-color: #1e293b;
         color: #f1f5f9 !important;
@@ -52,6 +60,24 @@ def inject_css():
     }
     .stButton > button:disabled { opacity: 0.3; }
 
+    /* Form submit buttons — gold, always visible */
+    .stFormSubmitButton > button,
+    [data-testid="stFormSubmitButton"] > button {
+        background-color: #d97706 !important;
+        border: none !important;
+        border-radius: 10px !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        padding: 0.75rem 1rem !important;
+        width: 100% !important;
+        transition: background-color 0.15s ease !important;
+    }
+    .stFormSubmitButton > button:hover,
+    [data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #b45309 !important;
+    }
+
     .stTextInput > div > div > input,
     .stSelectbox > div > div,
     .stDateInput > div > div > input {
@@ -60,10 +86,6 @@ def inject_css():
         border: 1px solid #334155 !important;
         border-radius: 8px !important;
     }
-
-    .stTabs [data-baseweb="tab-list"] { background: #1e293b; border-radius: 10px; }
-    .stTabs [data-baseweb="tab"] { color: #94a3b8 !important; }
-    .stTabs [aria-selected="true"] { color: #f59e0b !important; }
 
     [data-testid="stMetricValue"] { color: #f59e0b !important; font-size: 1.6rem !important; }
     [data-testid="stMetricLabel"] { color: #94a3b8 !important; }
@@ -77,8 +99,8 @@ def inject_css():
         padding: 1.1rem 1.4rem;
         margin-bottom: 0.6rem;
     }
-    .wc-card.gold { border-color: #f59e0b; }
-    .wc-card.red  { border-color: #ef4444; }
+    .wc-card.gold  { border-color: #f59e0b; }
+    .wc-card.red   { border-color: #ef4444; }
     .wc-card.green { border-color: #22c55e; }
 
     .badge {
@@ -94,5 +116,14 @@ def inject_css():
     .badge-red   { background:#7f1d1d; color:#fca5a5; }
     .badge-gold  { background:#78350f; color:#fde68a; }
     .badge-gray  { background:#1e293b; color:#94a3b8; border:1px solid #334155; }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def hide_sidebar():
+    st.markdown("""
+    <style>
+    section[data-testid="stSidebar"],
+    [data-testid="collapsedControl"] { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
