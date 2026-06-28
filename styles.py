@@ -33,6 +33,7 @@ def inject_css():
         border-right: 1px solid #2d3f55;
     }
     section[data-testid="stSidebar"] * { color: #f1f5f9 !important; }
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
 
     h1, h2, h3, h4 { color: #f1f5f9 !important; }
     p, label, span, div { color: #cbd5e1; }
