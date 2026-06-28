@@ -54,9 +54,13 @@ def inject_css():
         background-color: #1e293b;
     }
     .stButton > button[kind="primary"] {
-        background-color: #b45309 !important;
-        border-color: #f59e0b !important;
+        background-color: #2563eb !important;
+        border-color: #2563eb !important;
         color: #fff !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #1d4ed8 !important;
+        border-color: #1d4ed8 !important;
     }
     .stButton > button:disabled { opacity: 0.3; }
 

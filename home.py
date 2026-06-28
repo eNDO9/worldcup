@@ -75,10 +75,10 @@ if active_round:
             for team, col in [(match["team1"], c1), (match["team2"], c2)]:
                 used = team in prior_used
                 selected = st.session_state.selected_team == team
-                label = f"{'✓ ' if selected else ''}{flag(team)} {team}"
                 with col:
-                    if st.button(label, key=f"pick_{match['id']}_{team}",
-                                 disabled=used, use_container_width=True):
+                    if st.button(f"{flag(team)} {team}", key=f"pick_{match['id']}_{team}",
+                                 disabled=used, use_container_width=True,
+                                 type="primary" if selected else "secondary"):
                         st.session_state.selected_team = team
                         st.rerun()
             with mid:
