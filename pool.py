@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime, timezone
 from styles import flag
 import db
 from db import display_name
@@ -44,8 +45,18 @@ st.markdown("---")
 # ── Round picks ───────────────────────────────────────────────────────────────
 st.markdown("Opponents' picks are revealed after each round closes.")
 
-revealed = [r for r in all_rounds if r["status"] in ("completed", "locked")]
-active   = [r for r in all_rounds if r["status"] == "active"]
+now = datetime.now(timezone.utc)
+
+def _is_closed(r):
+    if r["status"] in ("completed", "locked"):
+        return True
+    if r["status"] == "active" and r.get("deadline"):
+        deadline = datetime.fromisoformat(r["deadline"].replace("Z", "+00:00"))
+        return deadline <= now
+    return False
+
+revealed = [r for r in all_rounds if _is_closed(r)]
+active   = [r for r in all_rounds if r["status"] == "active" and not _is_closed(r)]
 
 if revealed:
     for rnd in reversed(revealed):
