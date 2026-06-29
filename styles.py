@@ -33,9 +33,15 @@ def inject_css():
         border-right: 1px solid #2d3f55;
     }
     section[data-testid="stSidebar"] * { color: #f1f5f9 !important; }
-    /* Hide collapse button so sidebar can't be accidentally closed */
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
-    /* Make the re-expand button visible when sidebar is collapsed */
+    /* Sidebar collapse/expand toggle button */
+    [data-testid="stSidebarCollapseButton"] button {
+        color: #94a3b8 !important;
+    }
+    [data-testid="stSidebarCollapseButton"] svg {
+        fill: #94a3b8 !important;
+        stroke: #94a3b8 !important;
+    }
+    /* Re-expand tab that appears when sidebar is collapsed */
     [data-testid="collapsedControl"] {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
@@ -44,6 +50,7 @@ def inject_css():
         padding: 0.6rem 0.5rem !important;
         top: 5rem !important;
         position: fixed !important;
+        z-index: 999999 !important;
     }
     [data-testid="collapsedControl"] button {
         color: #f1f5f9 !important;
