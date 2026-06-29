@@ -146,6 +146,7 @@ if active_round:
                             "<b style='color:#64748b;'>vs</b></div>",
                             unsafe_allow_html=True,
                         )
+                st.markdown('<div style="margin-bottom:0.6rem;"></div>', unsafe_allow_html=True)
 
         sel = st.session_state.get("selected_team")
         if sel:
