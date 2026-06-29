@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from styles import inject_css, hide_sidebar
 import db
 from db import display_name
@@ -22,6 +23,22 @@ if not st.session_state.user:
     import login as _login
     _login.render()
     st.stop()
+
+# ── Force sidebar open on first load of each browser session ──────────────────
+if "sidebar_initialized" not in st.session_state:
+    st.session_state.sidebar_initialized = True
+    components.html("""
+        <script>
+            try {
+                var p = window.parent;
+                Object.keys(p.localStorage).forEach(function(k) {
+                    if (k.toLowerCase().indexOf('sidebar') !== -1) {
+                        p.localStorage.removeItem(k);
+                    }
+                });
+            } catch(e) {}
+        </script>
+    """, height=0)
 
 # ── Logged in ─────────────────────────────────────────────────────────────────
 user = db.get_user_by_id(st.session_state.user["id"]) or st.session_state.user
