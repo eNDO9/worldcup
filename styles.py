@@ -33,6 +33,25 @@ def inject_css():
         border-right: 1px solid #2d3f55;
     }
     section[data-testid="stSidebar"] * { color: #f1f5f9 !important; }
+    /* Hide collapse button so sidebar can't be accidentally closed */
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    /* Make the re-expand button visible when sidebar is collapsed */
+    [data-testid="collapsedControl"] {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-left: none !important;
+        border-radius: 0 0.5rem 0.5rem 0 !important;
+        padding: 0.6rem 0.5rem !important;
+        top: 5rem !important;
+        position: fixed !important;
+    }
+    [data-testid="collapsedControl"] button {
+        color: #f1f5f9 !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        fill: #f1f5f9 !important;
+        stroke: #f1f5f9 !important;
+    }
 
     h1, h2, h3, h4 { color: #f1f5f9 !important; }
     p, label, span, div { color: #cbd5e1; }
