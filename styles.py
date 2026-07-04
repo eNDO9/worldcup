@@ -90,6 +90,36 @@ def inject_css():
     }
     .stButton > button:disabled { opacity: 0.3; }
 
+    /* Already-used team — red, non-interactive (can't be picked again) */
+    .team-used {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        width: 100%;
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #7f1d1d;
+        background-color: #2a1414;
+        font-size: 0.95rem;
+        cursor: not-allowed;
+        box-sizing: border-box;
+    }
+    .team-used .team-used-name {
+        color: #f87171 !important;
+        text-decoration: line-through;
+        font-weight: 600;
+    }
+    .team-used .used-tag {
+        color: #fca5a5 !important;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: #7f1d1d;
+        padding: 1px 7px;
+        border-radius: 999px;
+    }
+
     /* Form submit buttons — blue */
     .stFormSubmitButton > button,
     [data-testid="stFormSubmitButton"] > button {

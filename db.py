@@ -108,6 +108,12 @@ def get_used_teams(user_id: str) -> set:
 
 def submit_pick(user_id: str, round_id: int, team: str) -> bool:
     try:
+        # Enforce the no-reuse rule server-side: a team picked in any *other*
+        # round can never be picked again (belt-and-suspenders behind the UI).
+        prior = (get_client().table("picks").select("round_id")
+                 .eq("user_id", user_id).eq("team_picked", team).execute().data or [])
+        if any(p["round_id"] != round_id for p in prior):
+            return False
         get_client().table("picks").upsert(
             {"user_id": user_id, "round_id": round_id, "team_picked": team},
             on_conflict="user_id,round_id",
@@ -169,7 +175,7 @@ def finalize_round(round_id: int) -> dict:
                 "eliminated_round_id": round_id,
             }).eq("id", p["user_id"]).execute()
             if user:
-                eliminated_names.append(user["username"])
+                eliminated_names.append(display_name(user))
 
     client.table("rounds").update({"status": "completed"}).eq("id", round_id).execute()
 

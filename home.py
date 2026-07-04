@@ -93,7 +93,7 @@ if active_round:
 
         if not existing_pick:
             st.markdown("### Pick your team")
-            st.caption("Select a team, then confirm. Grayed out = already used in a previous round.")
+            st.caption("Select a team, then confirm. Teams shown in red are already used in an earlier round and can’t be picked again.")
         else:
             hdr_col, cancel_col = st.columns([4, 1])
             with hdr_col:
@@ -128,9 +128,16 @@ if active_round:
                     used = team in prior_used
                     selected = st.session_state.selected_team == team
                     with col:
-                        if st.button(f"{flag(team)} {team}", key=f"pick_{match['id']}_{team}",
-                                     disabled=used or kicked_off, use_container_width=True,
-                                     type="primary" if selected else "secondary"):
+                        if used:
+                            st.markdown(
+                                f'<div class="team-used" title="Already used in an earlier round — you can’t pick this team again">'
+                                f'{flag(team)} <span class="team-used-name">{team}</span>'
+                                f'<span class="used-tag">🔒 used</span></div>',
+                                unsafe_allow_html=True,
+                            )
+                        elif st.button(f"{flag(team)} {team}", key=f"pick_{match['id']}_{team}",
+                                       disabled=kicked_off, use_container_width=True,
+                                       type="primary" if selected else "secondary"):
                             st.session_state.selected_team = team
                             st.rerun()
                 with mid:
