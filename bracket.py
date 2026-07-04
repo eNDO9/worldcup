@@ -1,6 +1,30 @@
 import streamlit as st
+from datetime import datetime, timezone, timedelta
 from styles import flag
 import db
+
+ET = timezone(timedelta(hours=-4))  # US Eastern (EDT) — tournament runs Jun–Jul
+
+
+def match_when(m: dict) -> str:
+    """Short ET date/time label for a match card, or '' if unknown."""
+    kt = m.get("kickoff_time")
+    if kt:
+        try:
+            dt = datetime.fromisoformat(str(kt).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.astimezone(ET)
+            return dt.strftime("%b %-d · %-I:%M %p ET")
+        except ValueError:
+            pass
+    d = m.get("match_date")
+    if d:
+        try:
+            return datetime.strptime(d, "%Y-%m-%d").strftime("%b %-d")
+        except ValueError:
+            return d
+    return ""
 
 st.markdown("# 🗓️ Bracket")
 st.caption("Live from the pool — updates automatically as results are entered.")
@@ -24,6 +48,11 @@ CSS = """
 .bmatch {
     background: #1e293b; border: 1px solid #334155; border-radius: 8px;
     overflow: hidden; margin: 7px 0;
+}
+.bdate {
+    font-size: 0.62rem; color: #64748b; text-align: center;
+    padding: 3px 6px; background: #172033; border-bottom: 1px solid #0f172a;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bteam {
     padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center;
@@ -58,8 +87,10 @@ for r in db.get_all_rounds():
     cards = []
     if matches:
         for m in sorted(matches, key=lambda x: x["id"]):
+            when = match_when(m)
+            date_row = f'<div class="bdate">{when}</div>' if when else ""
             cards.append(
-                f'<div class="bmatch">{_team_cell(m["team1"], m["winner"])}'
+                f'<div class="bmatch">{date_row}{_team_cell(m["team1"], m["winner"])}'
                 f'{_team_cell(m["team2"], m["winner"])}</div>'
             )
     else:
