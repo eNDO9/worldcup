@@ -94,16 +94,32 @@ if revealed:
         st.markdown("")
 
 for rnd in active:
-    picks_count = len(db.get_all_picks_for_round(rnd["id"]))
+    picked_ids   = {p["user_id"] for p in db.get_all_picks_for_round(rnd["id"])}
+    participants = [u for u in standings if not u["is_eliminated"]]
+    n_picked     = sum(1 for u in participants if u["id"] in picked_ids)
+
     st.markdown(f"### {rnd['name']} *(active)*")
-    st.markdown(
-        f'<div class="wc-card" style="text-align:center;padding:1.4rem;">'
-        f'<span style="font-size:1.5rem;">🔒</span><br>'
-        f'<b style="color:#f1f5f9;">{picks_count} player{"s" if picks_count != 1 else ""} have locked in picks</b><br>'
-        f'<span style="color:#64748b;font-size:0.85rem;">Picks revealed when the round closes</span>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    st.caption(f"{n_picked} of {len(participants)} players have locked in. "
+               f"Who picked is shown below — the teams stay hidden until the round closes.")
+
+    for u in participants:
+        has_pick = u["id"] in picked_ids
+        is_me    = u["id"] == user["id"]
+        me_tag   = " &nbsp;<span style='color:#94a3b8;font-size:0.8rem;'>you</span>" if is_me else ""
+        if has_pick:
+            st.markdown(
+                f'<div class="wc-card {"gold" if is_me else ""}" style="padding:0.6rem 1.2rem;">'
+                f'<span class="badge badge-green">✅ Locked in</span> &nbsp;'
+                f'<span style="color:#cbd5e1;">{display_name(u)}{me_tag}</span></div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<div class="wc-card" style="padding:0.6rem 1.2rem;opacity:0.55;">'
+                f'<span class="badge badge-gray">⏳ Not yet</span> &nbsp;'
+                f'<span style="color:#94a3b8;">{display_name(u)}{me_tag}</span></div>',
+                unsafe_allow_html=True,
+            )
 
 if not revealed and not active:
     st.info("No rounds have started yet.")
