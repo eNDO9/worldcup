@@ -96,7 +96,11 @@ for r in rounds:
     )
 
 # Bracket height must fit the first (largest) round's cards without overlap.
-height = EXPECTED["R32"] * 72 + 34
+# Row height is kept safely above the real card height so the equal-height
+# flex cells stay aligned (otherwise the first column overflows and the
+# connectors miss their targets).
+ROW_H = 90
+height = EXPECTED["R32"] * ROW_H + 34
 
 CSS = f"""
 <style>
@@ -115,12 +119,12 @@ CSS = f"""
     border-radius: 8px; overflow: hidden;
 }}
 .bdate {{
-    font-size: 0.6rem; color: #64748b; text-align: center; padding: 2px 6px;
+    font-size: 0.58rem; color: #64748b; text-align: center; padding: 1px 6px;
     background: #172033; border-bottom: 1px solid #0f172a;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }}
 .bteam {{
-    padding: 5px 9px; font-size: 0.78rem; display: flex; align-items: center;
+    padding: 4px 9px; font-size: 0.74rem; display: flex; align-items: center;
     gap: 6px; color: #cbd5e1; white-space: nowrap; border-bottom: 1px solid #0f172a;
 }}
 .bteam:last-child {{ border-bottom: none; }}
