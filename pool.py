@@ -43,10 +43,6 @@ st.markdown("### Players")
 open_rnd = active[0] if active else None
 picked_ids = ({p["user_id"] for p in db.get_all_picks_for_round(open_rnd["id"])}
               if open_rnd else set())
-if open_rnd:
-    n_picked = sum(1 for u in alive if u["id"] in picked_ids)
-    st.caption(f"{open_rnd['name']}: {n_picked} of {len(alive)} players locked in. "
-               f"Teams stay hidden until the round closes.")
 
 for u in standings:
     is_me  = u["id"] == user["id"]

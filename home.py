@@ -220,18 +220,3 @@ if past_picks:
             unsafe_allow_html=True,
         )
 
-# ── Can't reuse reminder ──────────────────────────────────────────────────────
-if all_picks and active_round:
-    prior = [p for p in all_picks if p["round_id"] != active_round["id"]]
-    if prior:
-        st.markdown("---")
-        st.markdown("### Teams you can't reuse")
-        cols = st.columns(4)
-        for i, p in enumerate(prior):
-            with cols[i % 4]:
-                st.markdown(
-                    f'<div style="text-align:center;padding:8px;background:#1e293b;border:1px solid #334155;'
-                    f'border-radius:8px;margin-bottom:6px;opacity:0.5;">'
-                    f'{flag(p["team_picked"])}<br><small><del>{p["team_picked"]}</del></small></div>',
-                    unsafe_allow_html=True,
-                )

@@ -4,23 +4,27 @@ from styles import flag
 import db
 
 st.markdown("# 🗓️ Bracket")
-st.caption("Live from the pool — updates automatically as results are entered.")
 st.markdown("---")
 
 ET = timezone(timedelta(hours=-4))  # US Eastern (EDT) — tournament runs Jun–Jul
 EXPECTED = {"R32": 16, "R16": 8, "QF": 4, "SF": 2, "F": 1}
 
 
+def fmt_kickoff(kt) -> str:
+    try:
+        dt = datetime.fromisoformat(str(kt).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(ET).strftime("%b %-d · %-I:%M %p ET")
+    except ValueError:
+        return ""
+
+
 def match_when(m: dict) -> str:
-    kt = m.get("kickoff_time")
-    if kt:
-        try:
-            dt = datetime.fromisoformat(str(kt).replace("Z", "+00:00"))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt.astimezone(ET).strftime("%b %-d · %-I:%M %p ET")
-        except ValueError:
-            pass
+    if m.get("kickoff_time"):
+        when = fmt_kickoff(m["kickoff_time"])
+        if when:
+            return when
     d = m.get("match_date")
     if d:
         try:
@@ -28,6 +32,31 @@ def match_when(m: dict) -> str:
         except ValueError:
             return d
     return ""
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def future_kickoffs() -> dict:
+    """Kickoff times for stages whose matches aren't in our DB yet, from the API.
+
+    Teams are TBD there too, so slot assignment is chronological — real DB
+    matches replace these placeholders once the round is created.
+    """
+    try:
+        import requests
+        token = st.secrets["football_data"]["token"]
+        ms = requests.get(
+            "https://api.football-data.org/v4/competitions/WC/matches",
+            headers={"X-Auth-Token": token}, timeout=10,
+        ).json().get("matches", [])
+        stage_map = {"QUARTER_FINALS": "QF", "SEMI_FINALS": "SF", "FINAL": "F"}
+        out = {}
+        for m in ms:
+            sn = stage_map.get(m.get("stage"))
+            if sn and m.get("utcDate"):
+                out.setdefault(sn, []).append(m["utcDate"])
+        return {k: sorted(v) for k, v in out.items()}
+    except Exception:
+        return {}
 
 
 def feeder_order(earlier: list, later: list) -> list:
@@ -85,9 +114,11 @@ def match_cell(m: dict, my_team: str | None) -> str:
             f'</div></div>')
 
 
-def placeholder_cell() -> str:
+def placeholder_cell(kickoff_utc: str | None = None) -> str:
     tbd = '<div class="bteam tbd">🏳️ <span>TBD</span></div>'
-    return f'<div class="bmatch"><div class="bcard">{tbd}{tbd}</div></div>'
+    when = fmt_kickoff(kickoff_utc) if kickoff_utc else ""
+    date_row = f'<div class="bdate">{when}</div>' if when else ""
+    return f'<div class="bmatch"><div class="bcard">{date_row}{tbd}{tbd}</div></div>'
 
 
 cols = []
@@ -98,7 +129,10 @@ for r in rounds:
         cells = [match_cell(m, my_team) for m in ms]
         col_cls = "bcol"
     else:
-        cells = [placeholder_cell() for _ in range(EXPECTED.get(r.get("short_name"), 0))]
+        sn = r.get("short_name")
+        times = future_kickoffs().get(sn, [])
+        cells = [placeholder_cell(times[i] if i < len(times) else None)
+                 for i in range(EXPECTED.get(sn, 0))]
         col_cls = "bcol bcol-empty"
     cols.append(
         f'<div class="{col_cls}"><div class="bcol-title">{r.get("short_name", r["name"])}</div>'
