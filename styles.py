@@ -197,6 +197,28 @@ def inject_css():
     .badge-red   { background:#7f1d1d; color:#fca5a5; }
     .badge-gold  { background:#78350f; color:#fde68a; }
     .badge-gray  { background:#1e293b; color:#94a3b8; border:1px solid #334155; }
+
+    /* ── Mobile: keep matchup rows side-by-side instead of stacking ── */
+    @media (max-width: 640px) {
+        [data-testid="stHorizontalBlock"] {
+            flex-wrap: nowrap !important;
+            gap: 0.4rem !important;
+        }
+        [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+            min-width: 0 !important;
+        }
+        .stButton > button {
+            font-size: 0.78rem;
+            padding: 0.5rem 0.4rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .team-used { font-size: 0.78rem; padding: 0.5rem 0.4rem; gap: 0.25rem; }
+        .team-used .used-tag { display: none; }
+        [data-testid="stMetricValue"] { font-size: 1.15rem !important; }
+        [data-testid="stMetricLabel"] { font-size: 0.72rem !important; }
+    }
     </style>
     """, unsafe_allow_html=True)
 

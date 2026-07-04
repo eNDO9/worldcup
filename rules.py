@@ -12,9 +12,11 @@ st.markdown("""
   <span style="color:#94a3b8;">Once you've picked a team, you can't pick them again in a later round.</span></p>
   <p><strong>3. Stay alive.</strong><br>
   <span style="color:#94a3b8;">If your picked team loses, you're eliminated. If they win, you advance.</span></p>
-  <p><strong>4. Beat the deadline.</strong><br>
-  <span style="color:#94a3b8;">Picks must be in before the round deadline. Once a match kicks off, those teams are no longer available.</span></p>
-  <p style="margin-bottom:0;"><strong>5. Last one standing wins.</strong><br>
+  <p><strong>4. Beat the kickoff.</strong><br>
+  <span style="color:#94a3b8;">Each team locks at its own kickoff — you can pick any team whose match hasn't started. Once you're picked into a match that has kicked off, that pick is final. The round closes at the last kickoff.</span></p>
+  <p><strong>5. No pick = eliminated.</strong><br>
+  <span style="color:#94a3b8;">If the round closes and you haven't made a pick, you're out — same as picking a loser.</span></p>
+  <p style="margin-bottom:0;"><strong>6. Last one standing wins.</strong><br>
   <span style="color:#94a3b8;">The last player with a surviving pick at the end of the tournament wins a secret mystery prize. 🎁</span></p>
 </div>
 """, unsafe_allow_html=True)

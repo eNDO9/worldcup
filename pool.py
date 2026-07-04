@@ -25,26 +25,6 @@ with col3:
 
 st.markdown("---")
 
-# ── Standings ─────────────────────────────────────────────────────────────────
-st.markdown("### Standings")
-if alive:
-    st.markdown(f"**🟢 Still in ({len(alive)})**")
-    for u in alive:
-        me = " 👈 you" if u["id"] == user["id"] else ""
-        st.markdown(f"- {display_name(u)}{me}")
-if out:
-    st.markdown(f"**💀 Eliminated ({len(out)})**")
-    for u in out:
-        rnd_name = u["rounds"].get(u["eliminated_round_id"], {}).get("name", "") if u["eliminated_round_id"] else ""
-        st.markdown(f"- ~~{display_name(u)}~~ *(out in {rnd_name})*")
-if not alive and not out:
-    st.info("No players yet.")
-
-st.markdown("---")
-
-# ── Round picks ───────────────────────────────────────────────────────────────
-st.markdown("Opponents' picks are revealed after each round closes.")
-
 now = datetime.now(timezone.utc)
 
 def _is_closed(r):
@@ -57,6 +37,42 @@ def _is_closed(r):
 
 revealed = [r for r in all_rounds if _is_closed(r)]
 active   = [r for r in all_rounds if r["status"] == "active" and not _is_closed(r)]
+
+# ── Players roster: alive/eliminated + pick status for the open round ─────────
+st.markdown("### Players")
+open_rnd = active[0] if active else None
+picked_ids = ({p["user_id"] for p in db.get_all_picks_for_round(open_rnd["id"])}
+              if open_rnd else set())
+if open_rnd:
+    n_picked = sum(1 for u in alive if u["id"] in picked_ids)
+    st.caption(f"{open_rnd['name']}: {n_picked} of {len(alive)} players locked in. "
+               f"Teams stay hidden until the round closes.")
+
+for u in standings:
+    is_me  = u["id"] == user["id"]
+    me_tag = " &nbsp;<span style='color:#94a3b8;font-size:0.8rem;'>you</span>" if is_me else ""
+    if u["is_eliminated"]:
+        rnd_name = u["rounds"].get(u["eliminated_round_id"], {}).get("name", "") if u["eliminated_round_id"] else ""
+        status = f'<span class="badge badge-red">💀 Out — {rnd_name}</span>'
+        name_html = f'<del style="color:#94a3b8;">{display_name(u)}</del>'
+        opacity = "opacity:0.55;"
+    else:
+        name_html = f'<span style="color:#f1f5f9;">{display_name(u)}</span>'
+        opacity = ""
+        if open_rnd:
+            status = ('<span class="badge badge-green">✅ Locked in</span>'
+                      if u["id"] in picked_ids
+                      else '<span class="badge badge-gray">⏳ Not yet</span>')
+        else:
+            status = '<span class="badge badge-green">🟢 Alive</span>'
+    st.markdown(
+        f'<div class="wc-card {"gold" if is_me else ""}" style="padding:0.6rem 1.2rem;{opacity}">'
+        f'{status} &nbsp;{name_html}{me_tag}</div>',
+        unsafe_allow_html=True,
+    )
+
+st.markdown("---")
+st.markdown("Opponents' picks are revealed after each round closes.")
 
 if revealed:
     for rnd in reversed(revealed):
@@ -92,34 +108,6 @@ if revealed:
                     unsafe_allow_html=True,
                 )
         st.markdown("")
-
-for rnd in active:
-    picked_ids   = {p["user_id"] for p in db.get_all_picks_for_round(rnd["id"])}
-    participants = [u for u in standings if not u["is_eliminated"]]
-    n_picked     = sum(1 for u in participants if u["id"] in picked_ids)
-
-    st.markdown(f"### {rnd['name']} *(active)*")
-    st.caption(f"{n_picked} of {len(participants)} players have locked in. "
-               f"Who picked is shown below — the teams stay hidden until the round closes.")
-
-    for u in participants:
-        has_pick = u["id"] in picked_ids
-        is_me    = u["id"] == user["id"]
-        me_tag   = " &nbsp;<span style='color:#94a3b8;font-size:0.8rem;'>you</span>" if is_me else ""
-        if has_pick:
-            st.markdown(
-                f'<div class="wc-card {"gold" if is_me else ""}" style="padding:0.6rem 1.2rem;">'
-                f'<span class="badge badge-green">✅ Locked in</span> &nbsp;'
-                f'<span style="color:#cbd5e1;">{display_name(u)}{me_tag}</span></div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                f'<div class="wc-card" style="padding:0.6rem 1.2rem;opacity:0.55;">'
-                f'<span class="badge badge-gray">⏳ Not yet</span> &nbsp;'
-                f'<span style="color:#94a3b8;">{display_name(u)}{me_tag}</span></div>',
-                unsafe_allow_html=True,
-            )
 
 if not revealed and not active:
     st.info("No rounds have started yet.")

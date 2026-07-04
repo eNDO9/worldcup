@@ -166,16 +166,21 @@ def finalize_round(round_id: int) -> dict:
             losers.add(loser)
 
     picks = get_all_picks_for_round(round_id)
+    picks_by_user = {p["user_id"]: p for p in picks}
+
+    # A player is eliminated if their pick lost OR they never made a pick.
+    alive = (client.table("app_users").select("*")
+             .eq("is_eliminated", False).execute().data or [])
     eliminated_names = []
-    for p in picks:
-        if p["team_picked"] in losers:
-            user = get_user_by_id(p["user_id"])
+    for user in alive:
+        pick = picks_by_user.get(user["id"])
+        if pick is None or pick["team_picked"] in losers:
             client.table("app_users").update({
                 "is_eliminated": True,
                 "eliminated_round_id": round_id,
-            }).eq("id", p["user_id"]).execute()
-            if user:
-                eliminated_names.append(display_name(user))
+            }).eq("id", user["id"]).execute()
+            eliminated_names.append(display_name(user)
+                                    + ("" if pick else " (no pick)"))
 
     client.table("rounds").update({"status": "completed"}).eq("id", round_id).execute()
 

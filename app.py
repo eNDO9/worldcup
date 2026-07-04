@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
+from datetime import datetime, timezone, timedelta
 from styles import inject_css, hide_sidebar
 import db
 from db import display_name
@@ -62,6 +63,27 @@ pages = [
 ]
 if user.get("email", "").lower() == ADMIN_EMAIL.lower():
     pages.append(st.Page("admin.py", title="Admin", icon="⚙️"))
+
+# ── No-pick warning banner (all pages) ────────────────────────────────────────
+active = db.get_active_round()
+if active and not user["is_eliminated"] and active["status"] != "locked":
+    now = datetime.now(timezone.utc)
+    deadline = datetime.fromisoformat(active["deadline"].replace("Z", "+00:00"))
+    if now < deadline and not db.get_user_pick_for_round(user["id"], active["id"]):
+        left = deadline - now
+        if left.total_seconds() >= 86400:
+            countdown = f"{int(left.total_seconds() // 86400)}d {int((left.total_seconds() % 86400) // 3600)}h"
+        else:
+            countdown = f"{int(left.total_seconds() // 3600)}h {int((left.total_seconds() % 3600) // 60)}m"
+        abs_et = (deadline - timedelta(hours=4)).strftime("%b %-d · %-I:%M %p ET")
+        st.markdown(
+            f'<div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;'
+            f'padding:0.7rem 1.2rem;margin-bottom:1rem;">'
+            f'<b style="color:#fecaca;">⚠️ No pick yet for the {active["name"]}</b>'
+            f'<span style="color:#fca5a5;"> — locks in {countdown} ({abs_et}). '
+            f'Teams lock earlier, at their own kickoff. Head to ✅ Make a Pick.</span></div>',
+            unsafe_allow_html=True,
+        )
 
 pg = st.navigation(pages)
 pg.run()

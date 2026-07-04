@@ -13,7 +13,7 @@ if "show_change" not in st.session_state:
 if "selected_team" not in st.session_state:
     st.session_state.selected_team = None
 
-st.markdown("# ⚽ World Cup Survivor")
+st.markdown("# ✅ Make a Pick")
 st.markdown("---")
 
 if active_round:
@@ -26,18 +26,36 @@ if active_round:
     used_teams = db.get_used_teams(user["id"])
     matches = db.get_matches_for_round(active_round["id"])
 
+    # A pick is locked once its own match has kicked off — no switching away.
+    def _kickoff(team):
+        for m in matches:
+            if team in (m["team1"], m["team2"]) and m.get("kickoff_time"):
+                kt = m["kickoff_time"]
+                return datetime.fromisoformat(kt.replace("Z", "+00:00")) if isinstance(kt, str) else kt.replace(tzinfo=timezone.utc)
+        return None
+
+    pick_started = False
+    if existing_pick:
+        ko = _kickoff(existing_pick["team_picked"])
+        pick_started = ko is not None and ko <= now
+
+    deadline_et = (deadline - timedelta(hours=4))
+    deadline_abs = deadline_et.strftime("%b %-d · %-I:%M %p ET")
+
     col_a, col_b, col_c = st.columns(3)
     with col_a:
         st.metric("Round", active_round["name"])
     with col_b:
         if not locked:
             if time_left.total_seconds() >= 86400:
-                et = deadline - timedelta(hours=4)
-                st.metric("Deadline", et.strftime("%b %-d, %-I%p ET"))
+                d = int(time_left.total_seconds() // 86400)
+                h = int((time_left.total_seconds() % 86400) // 3600)
+                st.metric("Deadline", f"{d}d {h}h")
             else:
                 h = int(time_left.total_seconds() // 3600)
                 m = int((time_left.total_seconds() % 3600) // 60)
                 st.metric("Deadline", f"{h}h {m}m")
+            st.caption(f"Locks {deadline_abs}. Teams lock at their own kickoff.")
         else:
             st.metric("Deadline", "Locked 🔒")
     with col_c:
@@ -75,7 +93,12 @@ if active_round:
 
         if locked:
             st.markdown(
-                '<p style="color:#64748b;font-size:0.85rem;margin-top:0.3rem;">🔒 Picks are locked — no more changes.</p>',
+                '<p style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">🔒 Picks are locked — no more changes.</p>',
+                unsafe_allow_html=True,
+            )
+        elif pick_started:
+            st.markdown(
+                '<p style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">🔒 Your pick\'s match has kicked off — it\'s locked in.</p>',
                 unsafe_allow_html=True,
             )
         elif not st.session_state.show_change:
@@ -86,6 +109,7 @@ if active_round:
 
     show_grid = (not locked
                  and not user["is_eliminated"]
+                 and not pick_started
                  and (not existing_pick or st.session_state.show_change))
 
     if show_grid:
@@ -112,7 +136,7 @@ if active_round:
                 except ValueError:
                     fmt = date_str
                 st.markdown(
-                    f'<p style="color:#64748b;font-size:0.8rem;text-transform:uppercase;'
+                    f'<p style="color:#94a3b8;font-size:0.8rem;text-transform:uppercase;'
                     f'letter-spacing:0.06em;margin:1rem 0 0.25rem;">{fmt}</p>',
                     unsafe_allow_html=True,
                 )
@@ -144,13 +168,13 @@ if active_round:
                     if kicked_off:
                         st.markdown(
                             "<div style='text-align:center;padding-top:6px;'>"
-                            "<span style='font-size:0.75rem;color:#64748b;'>🔒<br>started</span></div>",
+                            "<span style='font-size:0.75rem;color:#94a3b8;'>🔒<br>started</span></div>",
                             unsafe_allow_html=True,
                         )
                     else:
                         st.markdown(
                             "<div style='text-align:center;padding-top:10px;'>"
-                            "<b style='color:#64748b;'>vs</b></div>",
+                            "<b style='color:#94a3b8;'>vs</b></div>",
                             unsafe_allow_html=True,
                         )
                 st.markdown('<div style="margin-bottom:0.6rem;"></div>', unsafe_allow_html=True)

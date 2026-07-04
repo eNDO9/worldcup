@@ -65,16 +65,23 @@ for r in reversed(rounds):
         ordered_by_round[r["id"]] = None
 
 
-def team_row(team: str, winner: str | None) -> str:
+user = st.session_state.user
+my_picks = {p["round_id"]: p["team_picked"] for p in db.get_user_all_picks(user["id"])}
+
+
+def team_row(team: str, winner: str | None, my_team: str | None) -> str:
     cls = "bteam win" if winner == team else "bteam lose" if winner else "bteam"
-    return f'<div class="{cls}">{flag(team)} <span>{team}</span></div>'
+    if team == my_team:
+        cls += " mine"
+    star = ' <span class="mystar">★</span>' if team == my_team else ""
+    return f'<div class="{cls}">{flag(team)} <span>{team}{star}</span></div>'
 
 
-def match_cell(m: dict) -> str:
+def match_cell(m: dict, my_team: str | None) -> str:
     when = match_when(m)
     date_row = f'<div class="bdate">{when}</div>' if when else ""
     return (f'<div class="bmatch"><div class="bcard">{date_row}'
-            f'{team_row(m["team1"], m["winner"])}{team_row(m["team2"], m["winner"])}'
+            f'{team_row(m["team1"], m["winner"], my_team)}{team_row(m["team2"], m["winner"], my_team)}'
             f'</div></div>')
 
 
@@ -86,12 +93,15 @@ def placeholder_cell() -> str:
 cols = []
 for r in rounds:
     ms = ordered_by_round[r["id"]]
+    my_team = my_picks.get(r["id"])
     if ms:
-        cells = [match_cell(m) for m in ms]
+        cells = [match_cell(m, my_team) for m in ms]
+        col_cls = "bcol"
     else:
         cells = [placeholder_cell() for _ in range(EXPECTED.get(r.get("short_name"), 0))]
+        col_cls = "bcol bcol-empty"
     cols.append(
-        f'<div class="bcol"><div class="bcol-title">{r.get("short_name", r["name"])}</div>'
+        f'<div class="{col_cls}"><div class="bcol-title">{r.get("short_name", r["name"])}</div>'
         f'<div class="bcol-body">{"".join(cells)}</div></div>'
     )
 
@@ -105,8 +115,9 @@ height = EXPECTED["R32"] * ROW_H + 34
 CSS = f"""
 <style>
 .bracket-scroll {{ overflow-x: auto; padding-bottom: 1rem; }}
-.bracket {{ display: flex; min-width: 900px; height: {height}px; }}
+.bracket {{ display: flex; min-width: 920px; height: {height}px; padding-right: 20px; }}
 .bcol {{ display: flex; flex-direction: column; flex: 1 1 0; min-width: 172px; }}
+.bcol.bcol-empty {{ flex: 0.72 1 0; min-width: 118px; }}
 .bcol-title {{
     flex: 0 0 auto; height: 26px; text-align: center; color: #94a3b8;
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
@@ -119,7 +130,7 @@ CSS = f"""
     border-radius: 8px; overflow: hidden;
 }}
 .bdate {{
-    font-size: 0.58rem; color: #64748b; text-align: center; padding: 1px 6px;
+    font-size: 0.68rem; color: #8fa2b8; text-align: center; padding: 1px 6px;
     background: #172033; border-bottom: 1px solid #0f172a;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }}
@@ -132,7 +143,9 @@ CSS = f"""
 .bteam.win {{ background: rgba(34,197,94,0.12); color: #86efac !important; font-weight: 700; border-left: 3px solid #22c55e; }}
 .bteam.lose {{ opacity: 0.45; }}
 .bteam.lose span {{ text-decoration: line-through; }}
-.bteam.tbd {{ color: #475569; font-style: italic; }}
+.bteam.tbd {{ color: #64748b; font-style: italic; }}
+.bteam.mine {{ box-shadow: inset 0 0 0 1.5px #f59e0b; }}
+.bteam .mystar {{ color: #f59e0b; font-size: 0.7rem; }}
 
 /* Connectors: each odd match draws a "]" bracket linking its pair; each match
    after the first column draws a short stub reaching left to meet it. */

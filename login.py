@@ -15,7 +15,7 @@ def render():
             <h1 style="margin:0.6rem 0 0.3rem;font-size:2.2rem;font-weight:700;color:#f1f5f9;">
                 World Cup Survivor
             </h1>
-            <p style="color:#64748b;font-size:1rem;margin:0;">
+            <p style="color:#94a3b8;font-size:1rem;margin:0;">
                 Pick one team per round &nbsp;·&nbsp; Never reuse &nbsp;·&nbsp; Last one standing wins
             </p>
         </div>
@@ -37,7 +37,10 @@ def render():
                     else:
                         st.warning("Please fill in both fields.")
 
-            st.markdown('<p style="text-align:center;margin-top:1rem;color:#64748b;font-size:0.9rem;">Don\'t have an account?</p>',
+            st.markdown('<p style="text-align:center;margin-top:0.6rem;color:#94a3b8;font-size:0.8rem;">'
+                        'Forgot your password? Message the pool admin to reset it.</p>',
+                        unsafe_allow_html=True)
+            st.markdown('<p style="text-align:center;margin-top:1rem;color:#94a3b8;font-size:0.9rem;">Don\'t have an account?</p>',
                         unsafe_allow_html=True)
             if st.button("Create an account →", use_container_width=True, key="go_signup"):
                 st.session_state.auth_mode = "signup"
@@ -66,7 +69,7 @@ def render():
                         else:
                             st.error("An account with that email already exists.")
 
-            st.markdown('<p style="text-align:center;margin-top:1rem;color:#64748b;font-size:0.9rem;">Already have an account?</p>',
+            st.markdown('<p style="text-align:center;margin-top:1rem;color:#94a3b8;font-size:0.9rem;">Already have an account?</p>',
                         unsafe_allow_html=True)
             if st.button("← Back to Log In", use_container_width=True, key="go_login"):
                 st.session_state.auth_mode = "login"
