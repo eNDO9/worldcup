@@ -78,10 +78,35 @@ def add_match(round_id: int, team1: str, team2: str, match_date: str, venue: str
 
 def mark_match_winner(match_id: int, winner: str) -> bool:
     try:
+        res = get_client().table("matches").select("round_id").eq("id", match_id).execute()
         get_client().table("matches").update({"winner": winner}).eq("id", match_id).execute()
+        # Losing a match eliminates its pickers immediately — no waiting for finalize.
+        if res.data:
+            eliminate_losing_pickers(res.data[0]["round_id"])
         return True
     except Exception:
         return False
+
+def eliminate_losing_pickers(round_id: int) -> list:
+    """Eliminate alive players whose pick in this round has already lost."""
+    losers = set()
+    for m in get_matches_for_round(round_id):
+        if m["winner"]:
+            losers.add(m["team2"] if m["winner"] == m["team1"] else m["team1"])
+    if not losers:
+        return []
+    client = get_client()
+    eliminated = []
+    for p in get_all_picks_for_round(round_id):
+        if p["team_picked"] in losers:
+            user = get_user_by_id(p["user_id"])
+            if user and not user["is_eliminated"]:
+                client.table("app_users").update({
+                    "is_eliminated": True,
+                    "eliminated_round_id": round_id,
+                }).eq("id", p["user_id"]).execute()
+                eliminated.append(display_name(user))
+    return eliminated
 
 def teams_in_round(round_id: int) -> set:
     matches = get_matches_for_round(round_id)

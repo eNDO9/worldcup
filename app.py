@@ -41,6 +41,21 @@ if "sidebar_initialized" not in st.session_state:
         </script>
     """, height=0)
 
+# ── Auto-sync results from the API on load (cached 2 min across sessions) ─────
+@st.cache_data(ttl=120, show_spinner=False)
+def _auto_sync_results(round_id: int) -> int:
+    try:
+        import results_sync
+        return results_sync.auto_apply_results(round_id)
+    except Exception:
+        return 0
+
+_active_for_sync = db.get_active_round()
+if _active_for_sync:
+    _applied = _auto_sync_results(_active_for_sync["id"])
+    if _applied:
+        st.toast(f"⚽ {_applied} new result{'s' if _applied != 1 else ''} synced")
+
 # ── Logged in ─────────────────────────────────────────────────────────────────
 user = db.get_user_by_id(st.session_state.user["id"]) or st.session_state.user
 st.session_state.user = user

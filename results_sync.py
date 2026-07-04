@@ -81,6 +81,21 @@ def fetch_finished_results() -> tuple[dict | None, str | None]:
     return results, None
 
 
+def auto_apply_results(round_id: int) -> int:
+    """Apply finished results for the round straight to the DB. Returns count applied.
+
+    Safe to call on every page load: only writes winners for matches whose
+    team-pair matched an API result exactly, so a name mismatch can never
+    record a wrong winner (it just stays pending).
+    """
+    data, err = propose_winners(round_id)
+    if err or not data:
+        return 0
+    for m, w in data["proposals"]:
+        db.mark_match_winner(m["id"], w)
+    return len(data["proposals"])
+
+
 def propose_winners(round_id: int) -> tuple[dict | None, str | None]:
     """For matches in `round_id` with no winner yet, propose winners from the API.
 
