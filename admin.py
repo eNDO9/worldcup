@@ -37,6 +37,14 @@ selected_round_id = st.selectbox(
 )
 matches = db.get_matches_for_round(selected_round_id)
 
+if st.button("📅 Set deadline to first kickoff", key=f"ddl_{selected_round_id}",
+             help="Round deadline = the round's earliest kickoff time"):
+    new_ddl = db.sync_round_deadline(selected_round_id)
+    if new_ddl:
+        st.success(f"Deadline set to first kickoff: {new_ddl}")
+    else:
+        st.warning("No kickoff times on this round's matches yet.")
+
 # ── Auto-sync from football-data.org ──────────────────────────────────────────
 with st.expander("🔄 Auto-sync results from football-data.org"):
     st.caption("Pulls finished matches from the API and proposes winners. "

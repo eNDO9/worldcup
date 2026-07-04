@@ -12,8 +12,8 @@ st.markdown("""
   <span style="color:#94a3b8;">Once you've picked a team, you can't pick them again in a later round.</span></p>
   <p><strong>3. Stay alive.</strong><br>
   <span style="color:#94a3b8;">If your picked team loses, you're eliminated. If they win, you advance.</span></p>
-  <p><strong>4. Beat the kickoff.</strong><br>
-  <span style="color:#94a3b8;">Each team locks at its own kickoff — you can pick any team whose match hasn't started. Once you're picked into a match that has kicked off, that pick is final. The round closes at the last kickoff.</span></p>
+  <p><strong>4. Beat the first kickoff.</strong><br>
+  <span style="color:#94a3b8;">All picks are due before the round's first match kicks off. Once that first game starts, the whole round is locked.</span></p>
   <p><strong>5. No pick = eliminated.</strong><br>
   <span style="color:#94a3b8;">If the round closes and you haven't made a pick, you're out — same as picking a loser.</span></p>
   <p style="margin-bottom:0;"><strong>6. Last one standing wins.</strong><br>

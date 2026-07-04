@@ -80,8 +80,8 @@ if active and not user["is_eliminated"] and active["status"] != "locked":
             f'<div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;'
             f'padding:0.7rem 1.2rem;margin-bottom:1rem;">'
             f'<b style="color:#fecaca;">⚠️ No pick yet for the {active["name"]}</b>'
-            f'<span style="color:#fca5a5;"> — locks in {countdown} ({abs_et}). '
-            f'Teams lock earlier, at their own kickoff. Head to ✅ Make a Pick.</span></div>',
+            f'<span style="color:#fca5a5;"> — all picks lock at the round\'s first kickoff, '
+            f'in {countdown} ({abs_et}). Head to ✅ Make a Pick.</span></div>',
             unsafe_allow_html=True,
         )
 

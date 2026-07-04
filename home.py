@@ -55,7 +55,7 @@ if active_round:
                 h = int(time_left.total_seconds() // 3600)
                 m = int((time_left.total_seconds() % 3600) // 60)
                 st.metric("Deadline", f"{h}h {m}m")
-            st.caption(f"Locks {deadline_abs}. Teams lock at their own kickoff.")
+            st.caption(f"All picks lock at the round's first kickoff: {deadline_abs}.")
         else:
             st.metric("Deadline", "Locked 🔒")
     with col_c:

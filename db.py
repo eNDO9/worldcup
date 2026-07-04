@@ -42,6 +42,15 @@ def get_active_round() -> dict | None:
            .in_("status", ["active", "locked"]).order("id").limit(1).execute())
     return res.data[0] if res.data else None
 
+def sync_round_deadline(round_id: int) -> str | None:
+    """Set the round's deadline to its earliest kickoff. Returns it, or None if no kickoffs."""
+    kickoffs = [m["kickoff_time"] for m in get_matches_for_round(round_id) if m.get("kickoff_time")]
+    if not kickoffs:
+        return None
+    first = min(kickoffs)
+    get_client().table("rounds").update({"deadline": first}).eq("id", round_id).execute()
+    return first
+
 def update_round_status(round_id: int, status: str) -> bool:
     try:
         get_client().table("rounds").update({"status": status}).eq("id", round_id).execute()
