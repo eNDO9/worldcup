@@ -1,6 +1,7 @@
 import streamlit as st
 from styles import flag
 import db
+import results_sync
 
 user = st.session_state.user
 
@@ -35,6 +36,45 @@ selected_round_id = st.selectbox(
     format_func=lambda rid: round_map[rid]["name"],
 )
 matches = db.get_matches_for_round(selected_round_id)
+
+# ── Auto-sync from football-data.org ──────────────────────────────────────────
+with st.expander("🔄 Auto-sync results from football-data.org"):
+    st.caption("Pulls finished matches from the API and proposes winners. "
+               "Nothing is saved until you click Apply.")
+    if st.button("Fetch proposed results", key=f"sync_fetch_{selected_round_id}"):
+        data, err = results_sync.propose_winners(selected_round_id)
+        if err:
+            st.session_state.sync_result = {"err": err}
+        else:
+            st.session_state.sync_result = {
+                "round_id": selected_round_id,
+                "proposals": [(m["id"], m["team1"], m["team2"], w) for m, w in data["proposals"]],
+                "unmatched": [(m["team1"], m["team2"]) for m in data["unmatched"]],
+            }
+
+    sr = st.session_state.get("sync_result")
+    if sr and sr.get("err"):
+        st.error(sr["err"])
+    elif sr and sr.get("round_id") == selected_round_id:
+        props = sr["proposals"]
+        if props:
+            st.markdown("**Proposed winners:**")
+            for mid, t1, t2, w in props:
+                st.markdown(f"- {flag(t1)} {t1} vs {flag(t2)} {t2} → **{flag(w)} {w}**")
+            if st.button("✅ Apply all proposed winners", type="primary",
+                         key=f"sync_apply_{selected_round_id}"):
+                for mid, t1, t2, w in props:
+                    db.mark_match_winner(mid, w)
+                st.session_state.pop("sync_result", None)
+                st.success(f"Applied {len(props)} result(s).")
+                st.rerun()
+        else:
+            st.info("No new finished results found for this round.")
+        if sr["unmatched"]:
+            st.caption("No API result matched these (pending, or a team-name mismatch "
+                       "to fix in results_sync.NAME_MAP):")
+            for t1, t2 in sr["unmatched"]:
+                st.markdown(f"- {t1} vs {t2}")
 
 if not matches:
     st.info("No matches for this round yet. Add them below.")
