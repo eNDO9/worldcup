@@ -142,10 +142,11 @@ if active_round:
                 )
             for match in grp:
                 kt = match.get("kickoff_time")
-                kicked_off = False
+                kicked_off, kick_lbl = False, ""
                 if kt:
                     kt_dt = datetime.fromisoformat(kt.replace("Z", "+00:00")) if isinstance(kt, str) else kt.replace(tzinfo=timezone.utc)
                     kicked_off = kt_dt <= now
+                    kick_lbl = (kt_dt - timedelta(hours=4)).strftime("%-I:%M %p ET")
 
                 c1, mid, c2 = st.columns([5, 1, 5])
                 for team, col in [(match["team1"], c1), (match["team2"], c2)]:
@@ -172,9 +173,11 @@ if active_round:
                             unsafe_allow_html=True,
                         )
                     else:
+                        time_row = (f"<br><span style='font-size:0.66rem;color:#94a3b8;"
+                                    f"white-space:nowrap;'>{kick_lbl}</span>") if kick_lbl else ""
                         st.markdown(
-                            "<div style='text-align:center;padding-top:10px;'>"
-                            "<b style='color:#94a3b8;'>vs</b></div>",
+                            f"<div style='text-align:center;padding-top:{'4' if kick_lbl else '10'}px;'>"
+                            f"<b style='color:#94a3b8;'>vs</b>{time_row}</div>",
                             unsafe_allow_html=True,
                         )
                 st.markdown('<div style="margin-bottom:0.6rem;"></div>', unsafe_allow_html=True)
