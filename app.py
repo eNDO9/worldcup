@@ -55,7 +55,7 @@ with st.sidebar:
         st.rerun()
 
 pages = [
-    st.Page("home.py",    title="Home",     icon="🏠", default=True),
+    st.Page("home.py",    title="Make a Pick", icon="✅", default=True),
     st.Page("pool.py",    title="The Pool", icon="🏆"),
     st.Page("bracket.py", title="Bracket", icon="🗓️"),
     st.Page("rules.py",   title="Rules",    icon="📋"),
