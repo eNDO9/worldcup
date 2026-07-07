@@ -11,6 +11,7 @@ st.set_page_config(
     page_title="World Cup Survivor",
     page_icon="⚽",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 inject_css()
 
@@ -25,6 +26,8 @@ if st.session_state.user is None and not st.session_state.get("logged_out"):
 
 # ── Logged out: show login ─────────────────────────────────────────────────────
 if not st.session_state.user:
+    from styles import hide_sidebar
+    hide_sidebar()
     if st.session_state.get("logged_out"):
         # Keep clearing on every rerun: st.context still reports the old
         # cookie until the next full page load.
@@ -67,25 +70,38 @@ nav_items = [
 if user.get("email", "").lower() == ADMIN_EMAIL.lower():
     nav_items.append((st.Page("admin.py", title="Admin", icon="⚙️"), "⚙️ Admin"))
 
-pg = st.navigation([p for p, _ in nav_items], position="hidden")
+# Nav lives in the sidebar on desktop; on phones (where the sidebar is hidden)
+# the top tab bar below is the navigation instead.
+pg = st.navigation([p for p, _ in nav_items])
 
-# ── Top bar: brand + account menu ─────────────────────────────────────────────
+# ── Sidebar: account (desktop) ────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown(f"### {display_name(user)}")
+    badge = ('<span class="badge badge-red">Eliminated</span>' if user["is_eliminated"]
+             else '<span class="badge badge-green">Still alive ✓</span>')
+    st.markdown(badge, unsafe_allow_html=True)
+    st.markdown("---")
+    if st.button("Log out", use_container_width=True, key="logout_sidebar"):
+        st.session_state.user = None
+        st.session_state.logged_out = True
+        st.session_state.session_cookie_set = False
+        st.rerun()
+
+# ── Top bar: brand + account menu (mobile only, via CSS) ─────────────────────
 with st.container(key="topbar"):
     brand_col, account_col = st.columns([3, 1], vertical_alignment="center")
     with brand_col:
         st.markdown('<div class="brand">⚽ World Cup Survivor</div>', unsafe_allow_html=True)
     with account_col:
         with st.popover(f"👤 {display_name(user)}", use_container_width=True):
-            badge = ('<span class="badge badge-red">Eliminated</span>' if user["is_eliminated"]
-                     else '<span class="badge badge-green">Still alive ✓</span>')
             st.markdown(badge, unsafe_allow_html=True)
-            if st.button("Log out", use_container_width=True):
+            if st.button("Log out", use_container_width=True, key="logout_popover"):
                 st.session_state.user = None
                 st.session_state.logged_out = True
                 st.session_state.session_cookie_set = False
                 st.rerun()
 
-# ── Top nav tabs ──────────────────────────────────────────────────────────────
+# ── Top nav tabs (mobile only, via CSS) ───────────────────────────────────────
 with st.container(key="topnav"):
     cols = st.columns(len(nav_items), gap="small")
     for col, (page, label) in zip(cols, nav_items):

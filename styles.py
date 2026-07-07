@@ -20,15 +20,51 @@ def inject_css():
     <style>
     .stApp { background-color: #0f172a; }
 
-    /* Hide all Streamlit chrome (nav is a custom top bar; sidebar unused) */
+    /* Hide all Streamlit chrome (sidebar nav on desktop, top tabs on mobile) */
     #MainMenu, footer { visibility: hidden; }
     header[data-testid="stHeader"],
     .stAppHeader,
     [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"],
-    section[data-testid="stSidebar"],
+    [data-testid="stStatusWidget"] { display: none !important; }
+
+    /* ── Sidebar (desktop nav) ── */
+    section[data-testid="stSidebar"] {
+        background-color: #1e293b;
+        border-right: 1px solid #2d3f55;
+    }
+    section[data-testid="stSidebar"] * { color: #f1f5f9 !important; }
+    [data-testid="stSidebarCollapseButton"] button { color: #94a3b8 !important; }
+    [data-testid="stSidebarCollapseButton"] svg {
+        fill: #94a3b8 !important;
+        stroke: #94a3b8 !important;
+    }
+    /* Re-expand control when the sidebar is collapsed: it normally lives in
+       the (hidden) header, so pin it as a visible floating tab instead. */
     [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] { display: none !important; }
+    [data-testid="collapsedControl"] {
+        display: block !important;
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-left: none !important;
+        border-radius: 0 0.5rem 0.5rem 0 !important;
+        padding: 0.6rem 0.5rem !important;
+        top: 5rem !important;
+        left: 0 !important;
+        position: fixed !important;
+        z-index: 999999 !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="collapsedControl"] button { color: #f1f5f9 !important; }
+    [data-testid="stSidebarCollapsedControl"] svg,
+    [data-testid="collapsedControl"] svg {
+        fill: #f1f5f9 !important;
+        stroke: #f1f5f9 !important;
+    }
+
+    /* Top bar + tabs are the MOBILE nav — hidden on desktop */
+    @media (min-width: 641px) {
+        .st-key-topbar, .st-key-topnav { display: none !important; }
+    }
 
     .block-container {
         padding: 1.2rem 2.5rem 4rem;
@@ -228,6 +264,11 @@ def inject_css():
 
     /* ── Mobile ── */
     @media (max-width: 640px) {
+        /* Sidebar is unusable on phones — the top tab bar is the nav there */
+        section[data-testid="stSidebar"],
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="collapsedControl"] { display: none !important; }
+
         .block-container { padding: 0.7rem 0.8rem 3rem; }
         h1 { font-size: 1.5rem !important; }
 
@@ -273,5 +314,15 @@ def inject_css():
         .wc-card { padding: 0.8rem 0.9rem; }
         .warn-banner { padding: 0.55rem 0.8rem; font-size: 0.85rem; }
     }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def hide_sidebar():
+    st.markdown("""
+    <style>
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
