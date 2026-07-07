@@ -34,27 +34,26 @@ def match_when(m: dict) -> str:
     return ""
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def future_kickoffs() -> dict:
-    """Kickoff times for stages whose matches aren't in our DB yet, from the API.
+@st.cache_data(ttl=300, show_spinner=False)
+def api_fixtures() -> dict:
+    """API fixtures per stage short-name, teams included.
 
-    Teams are TBD there too, so slot assignment is chronological — real DB
-    matches replace these placeholders once the round is created.
+    The API names each side of a knockout fixture as soon as it's determined,
+    so a winner can advance in the displayed bracket before our DB has the
+    next round's match (which is only created once BOTH teams are known).
     """
     try:
-        import requests
-        token = st.secrets["football_data"]["token"]
-        ms = requests.get(
-            "https://api.football-data.org/v4/competitions/WC/matches",
-            headers={"X-Auth-Token": token}, timeout=10,
-        ).json().get("matches", [])
-        stage_map = {"QUARTER_FINALS": "QF", "SEMI_FINALS": "SF", "FINAL": "F"}
+        import results_sync
+        by_stage = {v: k for k, v in results_sync.STAGE_MAP.items()}
         out = {}
-        for m in ms:
-            sn = stage_map.get(m.get("stage"))
-            if sn and m.get("utcDate"):
-                out.setdefault(sn, []).append(m["utcDate"])
-        return {k: sorted(v) for k, v in out.items()}
+        for fx in results_sync.fetch_fixtures():
+            sn = by_stage.get(fx["stage"])
+            if sn:
+                out.setdefault(sn, []).append({
+                    "team1": fx["home"], "team2": fx["away"],
+                    "kickoff_time": fx["utc"], "winner": None,
+                })
+        return {k: sorted(v, key=lambda x: x["kickoff_time"] or "") for k, v in out.items()}
     except Exception:
         return {}
 
@@ -109,43 +108,79 @@ def team_row(team: str, winner: str | None, my_team: str | None) -> str:
 def match_cell(m: dict, my_team: str | None) -> str:
     when = match_when(m)
     date_row = f'<div class="bdate">{when}</div>' if when else ""
-    return (f'<div class="bmatch"><div class="bcard">{date_row}'
-            f'{team_row(m["team1"], m["winner"], my_team)}{team_row(m["team2"], m["winner"], my_team)}'
-            f'</div></div>')
-
-
-def placeholder_cell(kickoff_utc: str | None = None) -> str:
-    tbd = '<div class="bteam tbd">🏳️ <span>TBD</span></div>'
-    when = fmt_kickoff(kickoff_utc) if kickoff_utc else ""
-    date_row = f'<div class="bdate">{when}</div>' if when else ""
-    return f'<div class="bmatch"><div class="bcard">{date_row}{tbd}{tbd}</div></div>'
+    rows = "".join(
+        team_row(t, m.get("winner"), my_team) if t
+        else '<div class="bteam tbd">🏳️ <span>TBD</span></div>'
+        for t in (m.get("team1"), m.get("team2"))
+    )
+    return f'<div class="bmatch"><div class="bcard">{date_row}{rows}</div></div>'
 
 
 cols = []
+prev_shown = None  # what the previous column displays (team1/team2/winner dicts)
 for r in rounds:
-    ms = ordered_by_round[r["id"]]
-    my_team = my_picks.get(r["id"])
     sn = r.get("short_name")
-    expected = EXPECTED.get(sn, 0)
-    if ms:
-        cells = [match_cell(m, my_team) for m in ms]
-        # A partially-decided round (some matchups set, others still awaiting a
-        # feeder result) is padded with TBD cards so the column stays full.
-        if len(ms) < expected:
-            times = future_kickoffs().get(sn, [])
-            pad_times = times[len(ms):]
-            cells += [placeholder_cell(pad_times[i] if i < len(pad_times) else None)
-                      for i in range(expected - len(ms))]
-        col_cls = "bcol"
+    my_team = my_picks.get(r["id"])
+    ms = ordered_by_round[r["id"]] or []
+    n = max(EXPECTED.get(sn, 0), len(ms))
+
+    if ms and len(ms) >= n:
+        shown = list(ms)
     else:
-        times = future_kickoffs().get(sn, [])
-        cells = [placeholder_cell(times[i] if i < len(times) else None)
-                 for i in range(expected)]
-        col_cls = "bcol bcol-empty"
+        # Pad the round to full size: DB matches go to their bracket slot (the
+        # one below their feeder pair), then API fixtures — whose teams appear
+        # the moment a feeder match is decided — then blank TBD cards.
+        api = list(api_fixtures().get(sn, []))
+        db_pairs = [frozenset((m["team1"], m["team2"])) for m in ms]
+        api = [a for a in api
+               if not (a["team1"] and a["team2"]
+                       and frozenset((a["team1"], a["team2"])) in db_pairs)]
+
+        team_slot = {}  # team seen in the previous column -> slot it feeds here
+        if prev_shown:
+            for idx, pm in enumerate(prev_shown):
+                for t in (pm.get("team1"), pm.get("team2")):
+                    if t:
+                        team_slot[t] = idx // 2
+        slots, leftovers = [None] * n, []
+        for item in ms + api:
+            s = next((team_slot[t] for t in (item.get("team1"), item.get("team2"))
+                      if t and t in team_slot), None)
+            if s is not None and s < n and slots[s] is None:
+                slots[s] = item
+            else:
+                leftovers.append(item)
+        leftovers.sort(key=lambda x: x.get("kickoff_time") or "")
+        for i in range(n):
+            if slots[i] is None and leftovers:
+                slots[i] = leftovers.pop(0)
+        shown = [dict(s) if s else {"team1": None, "team2": None, "winner": None}
+                 for s in slots]
+
+        # Advance a lone winner even before the API names it: when exactly one
+        # matchup here is still fully unknown, its feeders must be the two
+        # previous-round matches none of whose teams appear in this column —
+        # so any decided winner among them belongs in it.
+        if prev_shown:
+            known = {t for it in shown for t in (it.get("team1"), it.get("team2")) if t}
+            unknown = [it for it in shown if not it.get("team1") and not it.get("team2")]
+            if len(unknown) == 1:
+                feeders = [pm for pm in prev_shown
+                           if (pm.get("team1") or pm.get("team2"))
+                           and not any(t and t in known
+                                       for t in (pm.get("team1"), pm.get("team2")))]
+                if len(feeders) == 2:
+                    unknown[0]["team1"] = feeders[0].get("winner")
+                    unknown[0]["team2"] = feeders[1].get("winner")
+
+    cells = [match_cell(it, my_team) for it in shown]
+    any_teams = any(it.get("team1") or it.get("team2") for it in shown)
+    col_cls = "bcol" if any_teams else "bcol bcol-empty"
     cols.append(
         f'<div class="{col_cls}"><div class="bcol-title">{r.get("short_name", r["name"])}</div>'
         f'<div class="bcol-body">{"".join(cells)}</div></div>'
     )
+    prev_shown = shown
 
 # Bracket height must fit the first (largest) round's cards without overlap.
 # Row height is kept safely above the real card height so the equal-height
