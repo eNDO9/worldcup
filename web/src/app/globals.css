@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Palette ported from styles.py — dark slate + amber accents */
+@theme {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface2: #172033;
+  --color-border: #334155;
+  --color-border2: #2d3f55;
+  --color-ink: #f1f5f9;
+  --color-body: #cbd5e1;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
+  --color-accent: #f59e0b;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-win: #22c55e;
+  --color-lose: #ef4444;
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-body);
+}
