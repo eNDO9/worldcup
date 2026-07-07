@@ -174,11 +174,10 @@ def auto_apply_results(round_id: int) -> int:
         for m, w in data["proposals"]:
             db.mark_match_winner(m["id"], w)
 
-    # As soon as the round is complete, seed the next round from the bracket.
-    # (Even one resolved matchup is enough — partly-known rounds fill in later.)
-    round_matches = db.get_matches_for_round(round_id)
-    if round_matches and all(m["winner"] for m in round_matches):
-        build_next_round(round_id, fixtures=fixtures)
+    # Seed the next round as matchups resolve: a matchup appears the moment
+    # BOTH its teams are known, without waiting for the rest of the round to
+    # finish (build_next_round only creates fully-resolved pairs).
+    build_next_round(round_id, fixtures=fixtures)
 
     return len(data["proposals"]) if (not err and data) else 0
 

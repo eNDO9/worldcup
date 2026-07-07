@@ -125,14 +125,22 @@ cols = []
 for r in rounds:
     ms = ordered_by_round[r["id"]]
     my_team = my_picks.get(r["id"])
+    sn = r.get("short_name")
+    expected = EXPECTED.get(sn, 0)
     if ms:
         cells = [match_cell(m, my_team) for m in ms]
+        # A partially-decided round (some matchups set, others still awaiting a
+        # feeder result) is padded with TBD cards so the column stays full.
+        if len(ms) < expected:
+            times = future_kickoffs().get(sn, [])
+            pad_times = times[len(ms):]
+            cells += [placeholder_cell(pad_times[i] if i < len(pad_times) else None)
+                      for i in range(expected - len(ms))]
         col_cls = "bcol"
     else:
-        sn = r.get("short_name")
         times = future_kickoffs().get(sn, [])
         cells = [placeholder_cell(times[i] if i < len(times) else None)
-                 for i in range(EXPECTED.get(sn, 0))]
+                 for i in range(expected)]
         col_cls = "bcol bcol-empty"
     cols.append(
         f'<div class="{col_cls}"><div class="bcol-title">{r.get("short_name", r["name"])}</div>'
