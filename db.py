@@ -87,6 +87,38 @@ def mark_match_winner(match_id: int, winner: str) -> bool:
     except Exception:
         return False
 
+def create_match(round_id: int, team1: str, team2: str,
+                 match_date: str | None = None, kickoff_time: str | None = None) -> bool:
+    """Insert a match, optionally with its scheduled date/kickoff. Used by the
+    bracket auto-advance to seed the next round from resolved API fixtures."""
+    try:
+        row = {"round_id": round_id, "team1": team1, "team2": team2}
+        if kickoff_time:
+            row["kickoff_time"] = kickoff_time
+            row["match_date"] = match_date or kickoff_time[:10]
+        elif match_date:
+            row["match_date"] = match_date
+        get_client().table("matches").insert(row).execute()
+        return True
+    except Exception:
+        return False
+
+def set_match_schedule(match_id: int, kickoff_utc: str) -> bool:
+    """Set a match's kickoff_time (and match_date from its date part)."""
+    if not kickoff_utc:
+        return False
+    try:
+        get_client().table("matches").update({
+            "kickoff_time": kickoff_utc, "match_date": kickoff_utc[:10],
+        }).eq("id", match_id).execute()
+        return True
+    except Exception:
+        return False
+
+def existing_pairs_for_round(round_id: int) -> set:
+    """Set of frozenset({team1, team2}) already present in a round."""
+    return {frozenset({m["team1"], m["team2"]}) for m in get_matches_for_round(round_id)}
+
 def eliminate_losing_pickers(round_id: int) -> list:
     """Eliminate alive players whose pick in this round has already lost."""
     losers = set()
@@ -218,8 +250,15 @@ def finalize_round(round_id: int) -> dict:
 
     client.table("rounds").update({"status": "completed"}).eq("id", round_id).execute()
 
+    # Build the next round's bracket from the real fixtures and activate it.
+    advanced = 0
     next_round = client.table("rounds").select("*").eq("id", round_id + 1).execute()
     if next_round.data:
         client.table("rounds").update({"status": "active"}).eq("id", round_id + 1).execute()
+        try:  # best-effort: pull the next round's real matchups from the API
+            import results_sync
+            advanced = results_sync.build_next_round(round_id)
+        except Exception:
+            pass
 
-    return {"eliminated": eliminated_names, "loser_teams": list(losers)}
+    return {"eliminated": eliminated_names, "loser_teams": list(losers), "advanced": advanced}

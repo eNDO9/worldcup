@@ -84,6 +84,19 @@ with st.expander("🔄 Auto-sync results from football-data.org"):
             for t1, t2 in sr["unmatched"]:
                 st.markdown(f"- {t1} vs {t2}")
 
+# ── Advance winners into the next round ───────────────────────────────────────
+if st.button("➡️ Build next round from bracket", key=f"advance_{selected_round_id}",
+             help="Pull the next round's real matchups (and kickoff times) from the API "
+                  "for this round's winners. Runs automatically when a round completes; "
+                  "this forces it now. Safe to re-run — never duplicates."):
+    n = results_sync.build_next_round(selected_round_id)
+    if n:
+        st.success(f"Added {n} matchup(s) to the next round.")
+        st.rerun()
+    else:
+        st.info("Nothing new to add yet — the next round's teams aren't all resolved "
+                "in the API, or its matches already exist.")
+
 if not matches:
     st.info("No matches for this round yet. Add them below.")
 else:
@@ -114,6 +127,8 @@ else:
                 st.error(f"Eliminated: {', '.join(result['eliminated'])}")
             else:
                 st.success("Round finalized — no one eliminated!")
+            if result.get("advanced"):
+                st.success(f"➡️ Advanced {result['advanced']} matchup(s) into the next round.")
             st.rerun()
     else:
         pending = sum(1 for m in matches if not m["winner"])

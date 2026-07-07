@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.matches (
     team1 TEXT NOT NULL,
     team2 TEXT NOT NULL,
     match_date DATE,
+    kickoff_time TIMESTAMPTZ,
     venue TEXT,
     winner TEXT
 );

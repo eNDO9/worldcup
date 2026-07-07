@@ -81,19 +81,106 @@ def fetch_finished_results() -> tuple[dict | None, str | None]:
     return results, None
 
 
+# Our round short_name  ->  football-data.org stage label.
+STAGE_MAP = {
+    "R32": "LAST_32", "R16": "LAST_16", "QF": "QUARTER_FINALS",
+    "SF": "SEMI_FINALS", "F": "FINAL",
+}
+
+
+def fetch_fixtures() -> list:
+    """Return [{stage, home, away, utc}] for every WC fixture (names normalized).
+
+    `home`/`away` are None until the bracket resolves them — that's exactly how
+    we tell which next-round matchups are known yet.
+    """
+    token = _token()
+    if not token:
+        return []
+    try:
+        resp = requests.get(
+            f"{API_BASE}/competitions/{WC_COMPETITION}/matches",
+            headers={"X-Auth-Token": token},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except Exception:
+        return []
+    out = []
+    for m in resp.json().get("matches", []):
+        h = (m.get("homeTeam") or {}).get("name")
+        a = (m.get("awayTeam") or {}).get("name")
+        out.append({
+            "stage": m.get("stage"),
+            "home": _norm(h) if h else None,
+            "away": _norm(a) if a else None,
+            "utc": m.get("utcDate"),
+        })
+    return out
+
+
+def build_next_round(round_id: int, fixtures: list | None = None) -> int:
+    """Seed round `round_id + 1` from the API's real, resolved fixtures.
+
+    Reads the true bracket from football-data.org (so pairings are always
+    correct — never guessed from match order), and creates any next-round match
+    whose *both* teams are known and that we don't already have. Idempotent:
+    matches are matched by team-pair, so re-running never duplicates. Also fills
+    a kickoff time on a match that exists but is missing one. Returns how many
+    matches were newly created.
+    """
+    nxt = next((r for r in db.get_all_rounds() if r["id"] == round_id + 1), None)
+    if not nxt:
+        return 0  # nothing after this round (the Final)
+    stage = STAGE_MAP.get(nxt.get("short_name"))
+    if not stage:
+        return 0
+
+    if fixtures is None:
+        fixtures = fetch_fixtures()
+    if not fixtures:
+        return 0
+
+    existing = {frozenset({m["team1"], m["team2"]}): m
+                for m in db.get_matches_for_round(nxt["id"])}
+    created = 0
+    for fx in fixtures:
+        if fx["stage"] != stage or not fx["home"] or not fx["away"]:
+            continue
+        pair = frozenset({fx["home"], fx["away"]})
+        if pair in existing:  # already have it — just backfill a missing kickoff
+            m = existing[pair]
+            if fx["utc"] and not m.get("kickoff_time"):
+                db.set_match_schedule(m["id"], fx["utc"])
+            continue
+        if db.create_match(nxt["id"], fx["home"], fx["away"], kickoff_time=fx["utc"]):
+            existing[pair] = {"id": None, "team1": fx["home"], "team2": fx["away"],
+                              "kickoff_time": fx["utc"]}
+            created += 1
+    return created
+
+
 def auto_apply_results(round_id: int) -> int:
     """Apply finished results for the round straight to the DB. Returns count applied.
 
     Safe to call on every page load: only writes winners for matches whose
     team-pair matched an API result exactly, so a name mismatch can never
-    record a wrong winner (it just stays pending).
+    record a wrong winner (it just stays pending). Whenever a round is fully
+    decided, the next round's real matchups are pulled in automatically.
     """
+    fixtures = fetch_fixtures()
     data, err = propose_winners(round_id)
-    if err or not data:
-        return 0
-    for m, w in data["proposals"]:
-        db.mark_match_winner(m["id"], w)
-    return len(data["proposals"])
+    if not err and data:
+        for m, w in data["proposals"]:
+            db.mark_match_winner(m["id"], w)
+
+    # As soon as the round is complete, seed the next round from the bracket.
+    # (Even one resolved matchup is enough — partly-known rounds fill in later.)
+    round_matches = db.get_matches_for_round(round_id)
+    if round_matches and all(m["winner"] for m in round_matches):
+        build_next_round(round_id, fixtures=fixtures)
+
+    return len(data["proposals"]) if (not err and data) else 0
 
 
 def propose_winners(round_id: int) -> tuple[dict | None, str | None]:
