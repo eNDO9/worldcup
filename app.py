@@ -1,7 +1,7 @@
 import streamlit as st
-import streamlit.components.v1 as components
 from datetime import datetime, timezone, timedelta
-from styles import inject_css, hide_sidebar
+from styles import inject_css
+import auth_session
 import db
 from db import display_name
 
@@ -11,35 +11,27 @@ st.set_page_config(
     page_title="World Cup Survivor",
     page_icon="⚽",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 inject_css()
 
 if "user" not in st.session_state:
     st.session_state.user = None
 
-# ── Logged out: show login, no sidebar ────────────────────────────────────────
+# ── Restore login from the session cookie on a fresh browser session ──────────
+if st.session_state.user is None and not st.session_state.get("logged_out"):
+    uid = auth_session.user_id_from_token(auth_session.read_cookie())
+    if uid:
+        st.session_state.user = db.get_user_by_id(uid)
+
+# ── Logged out: show login ─────────────────────────────────────────────────────
 if not st.session_state.user:
-    hide_sidebar()
+    if st.session_state.get("logged_out"):
+        # Keep clearing on every rerun: st.context still reports the old
+        # cookie until the next full page load.
+        auth_session.clear_cookie()
     import login as _login
     _login.render()
     st.stop()
-
-# ── Force sidebar open on first load of each browser session ──────────────────
-if "sidebar_initialized" not in st.session_state:
-    st.session_state.sidebar_initialized = True
-    components.html("""
-        <script>
-            try {
-                var p = window.parent;
-                Object.keys(p.localStorage).forEach(function(k) {
-                    if (k.toLowerCase().indexOf('sidebar') !== -1) {
-                        p.localStorage.removeItem(k);
-                    }
-                });
-            } catch(e) {}
-        </script>
-    """, height=0)
 
 # ── Auto-sync results from the API on load (cached 2 min across sessions) ─────
 @st.cache_data(ttl=120, show_spinner=False)
@@ -59,25 +51,49 @@ if _active_for_sync:
 # ── Logged in ─────────────────────────────────────────────────────────────────
 user = db.get_user_by_id(st.session_state.user["id"]) or st.session_state.user
 st.session_state.user = user
+st.session_state.logged_out = False
 
-with st.sidebar:
-    st.markdown(f"### {display_name(user)}")
-    badge = ('<span class="badge badge-red">Eliminated</span>' if user["is_eliminated"]
-             else '<span class="badge badge-green">Still alive ✓</span>')
-    st.markdown(badge, unsafe_allow_html=True)
-    st.markdown("---")
-    if st.button("Log out", use_container_width=True):
-        st.session_state.user = None
-        st.rerun()
+# Persist the login across page loads (30-day signed cookie).
+if not st.session_state.get("session_cookie_set"):
+    auth_session.write_cookie(user["id"])
+    st.session_state.session_cookie_set = True
 
-pages = [
-    st.Page("home.py",    title="Make a Pick", icon="✅", default=True),
-    st.Page("pool.py",    title="The Pool", icon="🏆"),
-    st.Page("bracket.py", title="Bracket", icon="🗓️"),
-    st.Page("rules.py",   title="Rules",    icon="📋"),
+nav_items = [
+    (st.Page("home.py",    title="Make a Pick", icon="✅", default=True), "✅ Pick"),
+    (st.Page("pool.py",    title="The Pool",    icon="🏆"), "🏆 Pool"),
+    (st.Page("bracket.py", title="Bracket",     icon="🗓️"), "🗓️ Bracket"),
+    (st.Page("rules.py",   title="Rules",       icon="📋"), "📋 Rules"),
 ]
 if user.get("email", "").lower() == ADMIN_EMAIL.lower():
-    pages.append(st.Page("admin.py", title="Admin", icon="⚙️"))
+    nav_items.append((st.Page("admin.py", title="Admin", icon="⚙️"), "⚙️ Admin"))
+
+pg = st.navigation([p for p, _ in nav_items], position="hidden")
+
+# ── Top bar: brand + account menu ─────────────────────────────────────────────
+with st.container(key="topbar"):
+    brand_col, account_col = st.columns([3, 1], vertical_alignment="center")
+    with brand_col:
+        st.markdown('<div class="brand">⚽ World Cup Survivor</div>', unsafe_allow_html=True)
+    with account_col:
+        with st.popover(f"👤 {display_name(user)}", use_container_width=True):
+            badge = ('<span class="badge badge-red">Eliminated</span>' if user["is_eliminated"]
+                     else '<span class="badge badge-green">Still alive ✓</span>')
+            st.markdown(badge, unsafe_allow_html=True)
+            if st.button("Log out", use_container_width=True):
+                st.session_state.user = None
+                st.session_state.logged_out = True
+                st.session_state.session_cookie_set = False
+                st.rerun()
+
+# ── Top nav tabs ──────────────────────────────────────────────────────────────
+with st.container(key="topnav"):
+    cols = st.columns(len(nav_items), gap="small")
+    for col, (page, label) in zip(cols, nav_items):
+        with col:
+            if st.button(label, key=f"nav_{page.url_path or 'home'}",
+                         type="primary" if page.url_path == pg.url_path else "secondary",
+                         use_container_width=True):
+                st.switch_page(page)
 
 # ── No-pick warning banner (all pages) ────────────────────────────────────────
 active = db.get_active_round()
@@ -92,13 +108,11 @@ if active and not user["is_eliminated"] and active["status"] != "locked":
             countdown = f"{int(left.total_seconds() // 3600)}h {int((left.total_seconds() % 3600) // 60)}m"
         abs_et = (deadline - timedelta(hours=4)).strftime("%b %-d · %-I:%M %p ET")
         st.markdown(
-            f'<div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;'
-            f'padding:0.7rem 1.2rem;margin-bottom:1rem;">'
-            f'<b style="color:#fecaca;">⚠️ No pick yet for the {active["name"]}</b>'
-            f'<span style="color:#fca5a5;"> — all picks lock at the round\'s first kickoff, '
-            f'in {countdown} ({abs_et}). Head to ✅ Make a Pick.</span></div>',
+            f'<div class="warn-banner">'
+            f'<b>⚠️ No pick yet for the {active["name"]}</b>'
+            f'<span> — all picks lock at the round\'s first kickoff, '
+            f'in {countdown} ({abs_et}). Head to ✅ Pick.</span></div>',
             unsafe_allow_html=True,
         )
 
-pg = st.navigation(pages)
 pg.run()

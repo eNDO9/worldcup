@@ -42,27 +42,28 @@ if active_round:
     deadline_et = (deadline - timedelta(hours=4))
     deadline_abs = deadline_et.strftime("%b %-d · %-I:%M %p ET")
 
-    col_a, col_b, col_c = st.columns(3)
-    with col_a:
-        st.metric("Round", active_round["name"])
-    with col_b:
-        if not locked:
-            if time_left.total_seconds() >= 86400:
-                d = int(time_left.total_seconds() // 86400)
-                h = int((time_left.total_seconds() % 86400) // 3600)
-                st.metric("Deadline", f"{d}d {h}h")
+    with st.container(key="round_metrics"):
+        col_a, col_b, col_c = st.columns(3)
+        with col_a:
+            st.metric("Round", active_round["name"])
+        with col_b:
+            if not locked:
+                if time_left.total_seconds() >= 86400:
+                    d = int(time_left.total_seconds() // 86400)
+                    h = int((time_left.total_seconds() % 86400) // 3600)
+                    st.metric("Deadline", f"{d}d {h}h")
+                else:
+                    h = int(time_left.total_seconds() // 3600)
+                    m = int((time_left.total_seconds() % 3600) // 60)
+                    st.metric("Deadline", f"{h}h {m}m")
+                st.caption(f"All picks lock at the round's first kickoff: {deadline_abs}.")
             else:
-                h = int(time_left.total_seconds() // 3600)
-                m = int((time_left.total_seconds() % 3600) // 60)
-                st.metric("Deadline", f"{h}h {m}m")
-            st.caption(f"All picks lock at the round's first kickoff: {deadline_abs}.")
-        else:
-            st.metric("Deadline", "Locked 🔒")
-    with col_c:
-        if existing_pick:
-            st.metric("Your Pick", f"{flag(existing_pick['team_picked'])} {existing_pick['team_picked']}")
-        else:
-            st.metric("Your Pick", "None yet")
+                st.metric("Deadline", "Locked 🔒")
+        with col_c:
+            if existing_pick:
+                st.metric("Your Pick", f"{flag(existing_pick['team_picked'])} {existing_pick['team_picked']}")
+            else:
+                st.metric("Your Pick", "None yet")
 
     st.markdown("---")
 
@@ -113,6 +114,7 @@ if active_round:
                  and (not existing_pick or st.session_state.show_change))
 
     if show_grid:
+      with st.container(key="pick_grid"):
         prior_used = used_teams - ({existing_pick["team_picked"]} if existing_pick else set())
 
         if not existing_pick:

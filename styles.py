@@ -20,48 +20,76 @@ def inject_css():
     <style>
     .stApp { background-color: #0f172a; }
 
-    /* Hide all Streamlit chrome */
+    /* Hide all Streamlit chrome (nav is a custom top bar; sidebar unused) */
     #MainMenu, footer { visibility: hidden; }
     header[data-testid="stHeader"],
     .stAppHeader,
     [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"] { display: none !important; }
+    [data-testid="stStatusWidget"],
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] { display: none !important; }
 
-    /* Sidebar */
-    section[data-testid="stSidebar"] {
-        background-color: #1e293b;
-        border-right: 1px solid #2d3f55;
+    .block-container {
+        padding: 1.2rem 2.5rem 4rem;
+        max-width: 1150px;
     }
-    section[data-testid="stSidebar"] * { color: #f1f5f9 !important; }
-    /* Sidebar collapse/expand toggle button */
-    [data-testid="stSidebarCollapseButton"] button {
-        color: #94a3b8 !important;
-    }
-    [data-testid="stSidebarCollapseButton"] svg {
-        fill: #94a3b8 !important;
-        stroke: #94a3b8 !important;
-    }
-    /* Re-expand tab that appears when sidebar is collapsed */
-    [data-testid="collapsedControl"] {
-        background-color: #1e293b !important;
-        border: 1px solid #334155 !important;
-        border-left: none !important;
-        border-radius: 0 0.5rem 0.5rem 0 !important;
-        padding: 0.6rem 0.5rem !important;
-        top: 5rem !important;
-        position: fixed !important;
-        z-index: 999999 !important;
-    }
-    [data-testid="collapsedControl"] button {
-        color: #f1f5f9 !important;
-    }
-    [data-testid="collapsedControl"] svg {
-        fill: #f1f5f9 !important;
-        stroke: #f1f5f9 !important;
-    }
+
+    /* Collapse the invisible containers of height-0 script iframes so they
+       don't add phantom vertical gaps (scripts still execute). */
+    .stElementContainer:has(iframe[height="0"]) { display: none !important; }
 
     h1, h2, h3, h4 { color: #f1f5f9 !important; }
     p, label, span, div { color: #cbd5e1; }
+    .block-container h1 { padding: 0.5rem 0 0.6rem !important; }
+    .block-container hr { margin: 0.4rem 0 1.1rem !important; }
+
+    /* ── Top bar: brand + account popover ── */
+    .st-key-topbar .brand {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #f1f5f9 !important;
+        white-space: nowrap;
+    }
+    .st-key-topbar button {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px !important;
+        color: #f1f5f9 !important;
+        min-height: 0 !important;
+        padding: 0.35rem 0.6rem !important;
+    }
+    .st-key-topbar button p {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.9rem;
+    }
+    [data-testid="stPopoverBody"] {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+    }
+
+    /* ── Top nav tabs ── */
+    .st-key-topnav { margin-bottom: 0.4rem; }
+    .st-key-topnav .stButton > button {
+        padding: 0.45rem 0.2rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ── No-pick warning banner ── */
+    .warn-banner {
+        background: #7f1d1d;
+        border: 1px solid #ef4444;
+        border-radius: 10px;
+        padding: 0.7rem 1.2rem;
+        margin-bottom: 1rem;
+    }
+    .warn-banner b { color: #fecaca; }
+    .warn-banner span { color: #fca5a5; }
 
     /* Regular buttons */
     .stButton > button {
@@ -198,15 +226,36 @@ def inject_css():
     .badge-gold  { background:#78350f; color:#fde68a; }
     .badge-gray  { background:#1e293b; color:#94a3b8; border:1px solid #334155; }
 
-    /* ── Mobile: keep matchup rows side-by-side instead of stacking ── */
+    /* ── Mobile ── */
     @media (max-width: 640px) {
-        [data-testid="stHorizontalBlock"] {
+        .block-container { padding: 0.7rem 0.8rem 3rem; }
+        h1 { font-size: 1.5rem !important; }
+
+        /* Rows that must stay side-by-side instead of stacking; everything
+           else (login form, admin) keeps Streamlit's default stacking. */
+        .st-key-topbar [data-testid="stHorizontalBlock"],
+        .st-key-topnav [data-testid="stHorizontalBlock"],
+        .st-key-round_metrics [data-testid="stHorizontalBlock"],
+        .st-key-pool_metrics [data-testid="stHorizontalBlock"],
+        .st-key-pick_grid [data-testid="stHorizontalBlock"] {
             flex-wrap: nowrap !important;
             gap: 0.4rem !important;
         }
-        [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        .st-key-topbar [data-testid="stColumn"],
+        .st-key-topnav [data-testid="stColumn"],
+        .st-key-round_metrics [data-testid="stColumn"],
+        .st-key-pool_metrics [data-testid="stColumn"],
+        .st-key-pick_grid [data-testid="stColumn"] {
             min-width: 0 !important;
         }
+
+        .st-key-topbar .brand { font-size: 0.95rem; }
+        .st-key-topnav .stButton > button {
+            font-size: 0.74rem;
+            padding: 0.45rem 0.1rem;
+            border-radius: 8px;
+        }
+
         .stButton > button {
             font-size: 0.78rem;
             padding: 0.5rem 0.4rem;
@@ -216,17 +265,13 @@ def inject_css():
         }
         .team-used { font-size: 0.78rem; padding: 0.5rem 0.4rem; gap: 0.25rem; }
         .team-used .used-tag { display: none; }
-        [data-testid="stMetricValue"] { font-size: 1.15rem !important; }
+        [data-testid="stMetricValue"] { font-size: 1.1rem !important; }
+        [data-testid="stMetricValue"] > div {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
         [data-testid="stMetricLabel"] { font-size: 0.72rem !important; }
+        .wc-card { padding: 0.8rem 0.9rem; }
+        .warn-banner { padding: 0.55rem 0.8rem; font-size: 0.85rem; }
     }
-    </style>
-    """, unsafe_allow_html=True)
-
-
-def hide_sidebar():
-    st.markdown("""
-    <style>
-    section[data-testid="stSidebar"],
-    [data-testid="collapsedControl"] { display: none !important; }
     </style>
     """, unsafe_allow_html=True)

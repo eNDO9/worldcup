@@ -1,0 +1,11 @@
+# Dark base theme so native widgets (popovers, dropdowns, toasts) match the
+# app's slate palette instead of rendering white.
+[theme]
+base = "dark"
+primaryColor = "#2563eb"
+backgroundColor = "#0f172a"
+secondaryBackgroundColor = "#1e293b"
+textColor = "#f1f5f9"
+
+[browser]
+gatherUsageStats = false

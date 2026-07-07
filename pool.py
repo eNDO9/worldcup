@@ -15,13 +15,14 @@ out   = [u for u in standings if u["is_eliminated"]]
 st.markdown("# 🏆 The Pool")
 st.markdown("---")
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Players Alive", len(alive))
-with col2:
-    st.metric("Eliminated", len(out))
-with col3:
-    st.metric("Current Round", active_round["name"] if active_round else "—")
+with st.container(key="pool_metrics"):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Players Alive", len(alive))
+    with col2:
+        st.metric("Eliminated", len(out))
+    with col3:
+        st.metric("Current Round", active_round["name"] if active_round else "—")
 
 st.markdown("---")
 
