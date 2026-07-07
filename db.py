@@ -1,5 +1,18 @@
+from datetime import datetime, timezone, timedelta
+
 import bcrypt
 from supabase_client import get_client
+
+_ET = timezone(timedelta(hours=-4))  # US Eastern (EDT) — tournament runs Jun–Jul
+
+
+def _et_date(kickoff_iso: str) -> str:
+    """Calendar date of a kickoff in US Eastern time. UTC dates roll past
+    midnight for evening ET games, so slicing the ISO string is wrong."""
+    dt = datetime.fromisoformat(kickoff_iso.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(_ET).date().isoformat()
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -95,7 +108,7 @@ def create_match(round_id: int, team1: str, team2: str,
         row = {"round_id": round_id, "team1": team1, "team2": team2}
         if kickoff_time:
             row["kickoff_time"] = kickoff_time
-            row["match_date"] = match_date or kickoff_time[:10]
+            row["match_date"] = match_date or _et_date(kickoff_time)
         elif match_date:
             row["match_date"] = match_date
         get_client().table("matches").insert(row).execute()
@@ -104,12 +117,12 @@ def create_match(round_id: int, team1: str, team2: str,
         return False
 
 def set_match_schedule(match_id: int, kickoff_utc: str) -> bool:
-    """Set a match's kickoff_time (and match_date from its date part)."""
+    """Set a match's kickoff_time (and match_date as its US-Eastern date)."""
     if not kickoff_utc:
         return False
     try:
         get_client().table("matches").update({
-            "kickoff_time": kickoff_utc, "match_date": kickoff_utc[:10],
+            "kickoff_time": kickoff_utc, "match_date": _et_date(kickoff_utc),
         }).eq("id", match_id).execute()
         return True
     except Exception:
