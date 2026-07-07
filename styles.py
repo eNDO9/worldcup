@@ -316,13 +316,3 @@ def inject_css():
     }
     </style>
     """, unsafe_allow_html=True)
-
-
-def hide_sidebar():
-    st.markdown("""
-    <style>
-    section[data-testid="stSidebar"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] { display: none !important; }
-    </style>
-    """, unsafe_allow_html=True)

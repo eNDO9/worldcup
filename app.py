@@ -26,8 +26,15 @@ if st.session_state.user is None and not st.session_state.get("logged_out"):
 
 # ── Logged out: show login ─────────────────────────────────────────────────────
 if not st.session_state.user:
-    from styles import hide_sidebar
-    hide_sidebar()
+    # Inlined (not imported from styles) so a half-reloaded styles module on
+    # Streamlit Cloud can never break the login page with an ImportError.
+    st.markdown("""
+    <style>
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] { display: none !important; }
+    </style>
+    """, unsafe_allow_html=True)
     if st.session_state.get("logged_out"):
         # Keep clearing on every rerun: st.context still reports the old
         # cookie until the next full page load.
