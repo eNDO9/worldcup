@@ -153,6 +153,24 @@ def eliminate_losing_pickers(round_id: int) -> list:
                 eliminated.append(display_name(user))
     return eliminated
 
+def eliminate_no_picks(round_id: int) -> list:
+    """Eliminate alive players with no pick for this round. Only call after
+    the round's deadline has passed. Idempotent."""
+    client = get_client()
+    picked = {p["user_id"] for p in get_all_picks_for_round(round_id)}
+    alive = (client.table("app_users").select("*")
+             .eq("is_eliminated", False).execute().data or [])
+    eliminated = []
+    for user in alive:
+        if user["id"] not in picked:
+            client.table("app_users").update({
+                "is_eliminated": True,
+                "eliminated_round_id": round_id,
+            }).eq("id", user["id"]).execute()
+            eliminated.append(display_name(user) + " (no pick)")
+    return eliminated
+
+
 def teams_in_round(round_id: int) -> set:
     matches = get_matches_for_round(round_id)
     return {t for m in matches for t in (m["team1"], m["team2"])}

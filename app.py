@@ -45,16 +45,25 @@ if not st.session_state.user:
 
 # ── Auto-sync results from the API on load (cached 2 min across sessions) ─────
 @st.cache_data(ttl=120, show_spinner=False)
-def _auto_sync_results(round_id: int) -> int:
+def _auto_sync_results(round_id: int, past_deadline: bool) -> int:
     try:
         import results_sync
-        return results_sync.auto_apply_results(round_id)
+        applied = results_sync.auto_apply_results(round_id)
+        # Once picks lock, having no pick is an instant elimination — same as
+        # a loss (rule 5). past_deadline is part of the cache key, so the
+        # sweep runs on the first load after the deadline, not up to 2 min
+        # later.
+        if past_deadline:
+            db.eliminate_no_picks(round_id)
+        return applied
     except Exception:
         return 0
 
 _active_for_sync = db.get_active_round()
 if _active_for_sync:
-    _applied = _auto_sync_results(_active_for_sync["id"])
+    _sync_now = datetime.now(timezone.utc)
+    _sync_ddl = datetime.fromisoformat(_active_for_sync["deadline"].replace("Z", "+00:00"))
+    _applied = _auto_sync_results(_active_for_sync["id"], _sync_now >= _sync_ddl)
     if _applied:
         st.toast(f"⚽ {_applied} new result{'s' if _applied != 1 else ''} synced")
 
