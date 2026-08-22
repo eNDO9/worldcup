@@ -1,25 +1,100 @@
 @import "tailwindcss";
 
-/* Palette ported from styles.py — dark slate + amber accents */
+/* ===========================================================================
+   Survivor design system — dark-first, built for a phone in one hand.
+   Deliberately not the World Cup slate/amber: near-black ground so team
+   colors (the only branding we can legally use) carry the accent weight.
+   =========================================================================== */
 @theme {
-  --color-bg: #0f172a;
-  --color-surface: #1e293b;
-  --color-surface2: #172033;
-  --color-border: #334155;
-  --color-border2: #2d3f55;
-  --color-ink: #f1f5f9;
-  --color-body: #cbd5e1;
-  --color-muted: #94a3b8;
-  --color-faint: #64748b;
-  --color-accent: #f59e0b;
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-win: #22c55e;
-  --color-lose: #ef4444;
+  /* ground + elevation */
+  --color-bg:        #08090c;
+  --color-surface:   #111319;
+  --color-surface2:  #171a22;
+  --color-raised:    #1d212b;
+  --color-border:    #262b36;
+  --color-border2:   #333a48;
+
+  /* type */
+  --color-ink:       #f7f8fa;
+  --color-body:      #c3c8d4;
+  --color-muted:     #8b93a5;
+  --color-faint:     #5d6577;
+
+  /* state — green=alive/win, red=out/loss, amber=tie, blue=action */
+  --color-alive:     #00d47e;
+  --color-alive-dim: #00d47e29;
+  --color-out:       #ff4d5e;
+  --color-out-dim:   #ff4d5e29;
+  --color-tie:       #ffb020;
+  --color-tie-dim:   #ffb02029;
+  --color-accent:    #3d7bff;
+  --color-accent-dim:#3d7bff29;
+
   --font-sans: var(--font-geist-sans);
+
+  --radius-card: 16px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* iOS safe areas: the tab bar sits above the home indicator, and the
+   scroll region clears the notch. */
+:root {
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tabbar-h:    58px;
+}
+
+html {
+  background: var(--color-bg);
+  /* Stop the rubber-band overscroll revealing white behind the app. */
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-body);
+  /* No text selection flicker on tap, but keep it inside real content. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tap targets should never show the iOS grey flash; we animate instead. */
+button, a, [role="button"] {
+  -webkit-touch-callout: none;
+}
+
+/* Press feedback that reads as native rather than as a web hover. */
+.press {
+  transition: transform 120ms var(--ease-out-soft), background-color 120ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Horizontal week strip / any x-scroller: hide the bar, keep the scroll. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Snap the week chips so they settle cleanly under a thumb flick. */
+.snap-x-strip {
+  scroll-snap-type: x mandatory;
+}
+.snap-x-strip > * {
+  scroll-snap-align: center;
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 var(--color-alive-dim); }
+  70%  { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.live-dot { animation: pulse-ring 2s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .press, .live-dot { transition: none; animation: none; }
+  .press:active { transform: none; }
 }

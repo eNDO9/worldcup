@@ -5,3 +5,7 @@ __pycache__/
 .DS_Store
 .venv/
 venv/
+
+# Next.js build output
+web/.next/
+web/node_modules/
